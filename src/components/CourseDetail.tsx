@@ -131,13 +131,29 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ user }) => {
   };
 
   const getYouTubeVideoId = (url: string): string | null => {
-    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
-    const match = url.match(regex);
-    return match ? match[1] : null;
+    if (!url) return null;
+    
+    // Handle various YouTube URL formats
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+      /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
+      /youtu\.be\/([^&\n?#]+)/,
+      /youtube\.com\/embed\/([^&\n?#]+)/,
+      /youtube\.com\/v\/([^&\n?#]+)/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    
+    return null;
   };
 
   const getYouTubeEmbedUrl = (videoId: string): string => {
-    return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
+    return `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&enablejsapi=1&origin=${window.location.origin}`;
   };
 
   const getLessonIcon = (type: string) => {
@@ -658,9 +674,16 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ user }) => {
                   <div className="flex items-center justify-center h-full text-white">
                     <div className="text-center">
                       <Play className="w-16 h-16 mx-auto mb-4" />
-                      <p>Video content for: {currentLesson.title}</p>
+                      <p className="text-xl mb-2">Video content for: {currentLesson.title}</p>
                       <p className="text-sm opacity-75">Duration: {currentLesson.duration}</p>
-                      <p className="text-xs opacity-50 mt-2">YouTube video would be embedded here</p>
+                      {currentLesson.videoUrl ? (
+                        <div className="mt-4">
+                          <p className="text-sm opacity-50 mb-2">YouTube URL: {currentLesson.videoUrl}</p>
+                          <p className="text-xs opacity-50">Unable to load video. Please check the URL format.</p>
+                        </div>
+                      ) : (
+                        <p className="text-xs opacity-50 mt-2">No video URL provided</p>
+                      )}
                     </div>
                   </div>
                 )}
