@@ -75,7 +75,7 @@ function App() {
           <Route path="/skill-assessment" element={<SkillAssessment user={user!} />} />
           <Route path="/assessment/:id" element={<AssessmentDetail user={user!} />} />
           <Route path="/profile" element={<UserProfile user={user!} />} />
-          <Route path="/course/:id" element={<CourseDetail courseId="1" />} />
+          <Route path="/course/:id" element={<CourseDetail user={user!} />} />
           <Route path="/quiz/:id" element={<InteractiveQuiz />} />
           <Route path="/progress" element={<ProgressTracker user={user!} />} />
           <Route path="/study-groups" element={<StudyGroups />} />

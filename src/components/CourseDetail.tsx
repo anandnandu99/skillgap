@@ -1,94 +1,140 @@
-import React, { useState } from 'react';
-import { Play, Clock, Users, Star, BookOpen, CheckCircle, Lock, Download, MessageCircle, Share2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Play, Clock, Users, Star, BookOpen, CheckCircle, Lock, Download, MessageCircle, Share2, Award, ArrowLeft, ArrowRight, FileText, Video, Code, Quiz } from 'lucide-react';
+import { courseStorage, Course, CourseEnrollment, Lesson } from '../utils/courseStorage';
+import { User, userStorage } from '../utils/userStorage';
 
 interface CourseDetailProps {
-  courseId: string;
+  user: User;
 }
 
-const CourseDetail: React.FC<CourseDetailProps> = ({ courseId }) => {
+const CourseDetail: React.FC<CourseDetailProps> = ({ user }) => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
-  const [enrollmentStatus, setEnrollmentStatus] = useState('not-enrolled'); // not-enrolled, enrolled, completed
+  const [course, setCourse] = useState<Course | null>(null);
+  const [enrollment, setEnrollment] = useState<CourseEnrollment | null>(null);
+  const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
+  const [showVideoPlayer, setShowVideoPlayer] = useState(false);
 
-  // Mock course data - in real app, this would come from API
-  const course = {
-    id: courseId,
-    title: 'Advanced Machine Learning with Python',
-    instructor: 'Dr. Sarah Chen',
-    rating: 4.9,
-    students: 12500,
-    duration: '8 weeks',
-    level: 'Advanced',
-    category: 'Data Science',
-    price: 149,
-    thumbnail: 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=800',
-    description: 'Master advanced machine learning algorithms and techniques for real-world applications. This comprehensive course covers deep learning, neural networks, and practical implementation using Python.',
-    learningObjectives: [
-      'Understand advanced ML algorithms and their applications',
-      'Implement neural networks from scratch using Python',
-      'Work with real-world datasets and preprocessing techniques',
-      'Deploy ML models to production environments',
-      'Optimize model performance and handle large-scale data'
-    ],
-    prerequisites: [
-      'Basic Python programming knowledge',
-      'Understanding of statistics and linear algebra',
-      'Familiarity with basic machine learning concepts'
-    ],
-    syllabus: [
-      {
-        week: 1,
-        title: 'Introduction to Advanced ML',
-        lessons: [
-          { id: 1, title: 'Course Overview and Setup', duration: '15 min', type: 'video', completed: true },
-          { id: 2, title: 'Advanced ML Landscape', duration: '25 min', type: 'video', completed: true },
-          { id: 3, title: 'Python Environment Setup', duration: '20 min', type: 'hands-on', completed: false }
-        ]
-      },
-      {
-        week: 2,
-        title: 'Deep Learning Fundamentals',
-        lessons: [
-          { id: 4, title: 'Neural Network Architecture', duration: '30 min', type: 'video', completed: false },
-          { id: 5, title: 'Backpropagation Algorithm', duration: '35 min', type: 'video', completed: false },
-          { id: 6, title: 'Building Your First Neural Network', duration: '45 min', type: 'hands-on', completed: false }
-        ]
-      },
-      {
-        week: 3,
-        title: 'Convolutional Neural Networks',
-        lessons: [
-          { id: 7, title: 'CNN Architecture', duration: '25 min', type: 'video', completed: false },
-          { id: 8, title: 'Image Classification Project', duration: '60 min', type: 'project', completed: false }
-        ]
+  useEffect(() => {
+    if (id) {
+      const foundCourse = courseStorage.getCourseById(id);
+      setCourse(foundCourse);
+      
+      if (foundCourse) {
+        const userEnrollment = courseStorage.getUserEnrollment(user.id, id);
+        setEnrollment(userEnrollment);
       }
-    ],
-    reviews: [
-      {
-        id: 1,
-        user: 'Alex Johnson',
-        rating: 5,
-        comment: 'Excellent course! The instructor explains complex concepts very clearly.',
-        date: '2024-01-15'
-      },
-      {
-        id: 2,
-        user: 'Maria Garcia',
-        rating: 4,
-        comment: 'Great content, but could use more practical examples.',
-        date: '2024-01-10'
-      }
-    ]
-  };
+    }
+  }, [id, user.id]);
 
   const handleEnroll = () => {
-    setEnrollmentStatus('enrolled');
+    if (course && !enrollment) {
+      const newEnrollment = courseStorage.enrollUserInCourse(user.id, course.id);
+      setEnrollment(newEnrollment);
+      
+      // Save activity
+      const activity = {
+        id: Date.now().toString(),
+        userId: user.id,
+        type: 'course_enrolled' as const,
+        title: `Enrolled in ${course.title}`,
+        timestamp: new Date().toISOString(),
+        data: { courseId: course.id }
+      };
+      userStorage.saveActivity(activity);
+    }
   };
+
+  const handleLessonClick = (lesson: Lesson) => {
+    if (enrollment) {
+      setCurrentLesson(lesson);
+      if (lesson.type === 'video') {
+        setShowVideoPlayer(true);
+      }
+    }
+  };
+
+  const markLessonComplete = (lessonId: string) => {
+    if (course && enrollment) {
+      courseStorage.updateEnrollmentProgress(user.id, course.id, lessonId);
+      
+      // Update local enrollment state
+      const updatedEnrollment = courseStorage.getUserEnrollment(user.id, course.id);
+      setEnrollment(updatedEnrollment);
+
+      // Save lesson progress
+      const progress = {
+        id: Date.now().toString(),
+        userId: user.id,
+        courseId: course.id,
+        lessonId,
+        completed: true,
+        completedDate: new Date().toISOString(),
+        timeSpent: 0
+      };
+      courseStorage.saveLessonProgress(progress);
+    }
+  };
+
+  const getLessonIcon = (type: string) => {
+    switch (type) {
+      case 'video':
+        return <Video className="w-4 h-4" />;
+      case 'reading':
+        return <FileText className="w-4 h-4" />;
+      case 'interactive':
+        return <Code className="w-4 h-4" />;
+      case 'quiz':
+        return <Quiz className="w-4 h-4" />;
+      default:
+        return <BookOpen className="w-4 h-4" />;
+    }
+  };
+
+  const isLessonCompleted = (lessonId: string) => {
+    return enrollment?.completedLessons.includes(lessonId) || false;
+  };
+
+  const canAccessLesson = (moduleIndex: number, lessonIndex: number) => {
+    if (!enrollment) return false;
+    if (moduleIndex === 0 && lessonIndex === 0) return true;
+    
+    // Check if previous lesson is completed
+    if (lessonIndex > 0) {
+      const prevLesson = course?.syllabus[moduleIndex].lessons[lessonIndex - 1];
+      return prevLesson ? isLessonCompleted(prevLesson.id) : false;
+    } else if (moduleIndex > 0) {
+      const prevModule = course?.syllabus[moduleIndex - 1];
+      const lastLesson = prevModule?.lessons[prevModule.lessons.length - 1];
+      return lastLesson ? isLessonCompleted(lastLesson.id) : false;
+    }
+    
+    return false;
+  };
+
+  if (!course) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900">Course not found</h1>
+          <button 
+            onClick={() => navigate('/explore-courses')}
+            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Back to Courses
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'curriculum', label: 'Curriculum' },
-    { id: 'reviews', label: 'Reviews' },
-    { id: 'instructor', label: 'Instructor' }
+    { id: 'instructor', label: 'Instructor' },
+    { id: 'reviews', label: 'Reviews' }
   ];
 
   return (
@@ -97,14 +143,27 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ courseId }) => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
           <div>
+            <button 
+              onClick={() => navigate('/explore-courses')}
+              className="mb-4 text-blue-600 hover:text-blue-700 flex items-center"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Courses
+            </button>
+            
             <div className="flex items-center space-x-2 mb-4">
               <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium">
                 {course.category}
               </span>
-              <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-sm font-medium">
+              <span className={`px-2 py-1 rounded text-sm font-medium ${
+                course.level === 'beginner' ? 'bg-green-100 text-green-800' :
+                course.level === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-red-100 text-red-800'
+              }`}>
                 {course.level}
               </span>
             </div>
+            
             <h1 className="text-3xl font-bold text-gray-900 mb-4">{course.title}</h1>
             <p className="text-gray-600 mb-6">{course.description}</p>
             
@@ -118,10 +177,29 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ courseId }) => {
                 <Clock className="w-5 h-5 text-gray-400" />
                 <span className="text-gray-600">{course.duration}</span>
               </div>
+              <div className="flex items-center space-x-2">
+                <BookOpen className="w-5 h-5 text-gray-400" />
+                <span className="text-gray-600">{course.totalLessons} lessons</span>
+              </div>
             </div>
 
+            {enrollment && (
+              <div className="mb-6">
+                <div className="flex justify-between text-sm text-gray-600 mb-2">
+                  <span>Your Progress</span>
+                  <span>{enrollment.progress}% Complete</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-300" 
+                    style={{width: `${enrollment.progress}%`}}
+                  ></div>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center space-x-4">
-              {enrollmentStatus === 'not-enrolled' ? (
+              {!enrollment ? (
                 <button
                   onClick={handleEnroll}
                   className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
@@ -129,7 +207,10 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ courseId }) => {
                   Enroll Now - ${course.price}
                 </button>
               ) : (
-                <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center space-x-2">
+                <button 
+                  onClick={() => setActiveTab('curriculum')}
+                  className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center space-x-2"
+                >
                   <Play className="w-5 h-5" />
                   <span>Continue Learning</span>
                 </button>
@@ -147,10 +228,21 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ courseId }) => {
               className="w-full h-64 object-cover rounded-lg"
             />
             <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center rounded-lg">
-              <button className="bg-white bg-opacity-90 rounded-full p-4 hover:bg-opacity-100 transition-all">
+              <button 
+                onClick={() => enrollment && setShowVideoPlayer(true)}
+                className={`bg-white bg-opacity-90 rounded-full p-4 hover:bg-opacity-100 transition-all ${
+                  !enrollment ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                disabled={!enrollment}
+              >
                 <Play className="w-8 h-8 text-blue-600" />
               </button>
             </div>
+            {!enrollment && (
+              <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                Enroll to Access
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -204,46 +296,135 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ courseId }) => {
                       ))}
                     </ul>
                   </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Skills You'll Gain</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {course.tags.map((tag, index) => (
+                        <span key={index} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
               {activeTab === 'curriculum' && (
                 <div className="space-y-6">
-                  {course.syllabus.map((week) => (
-                    <div key={week.week} className="border border-gray-200 rounded-lg">
+                  {course.syllabus.map((module, moduleIndex) => (
+                    <div key={module.id} className="border border-gray-200 rounded-lg">
                       <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
                         <h3 className="font-medium text-gray-900">
-                          Week {week.week}: {week.title}
+                          Module {moduleIndex + 1}: {module.title}
                         </h3>
+                        <p className="text-sm text-gray-600 mt-1">{module.description}</p>
                       </div>
                       <div className="p-4 space-y-3">
-                        {week.lessons.map((lesson) => (
-                          <div key={lesson.id} className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              {lesson.completed ? (
-                                <CheckCircle className="w-5 h-5 text-green-500" />
-                              ) : enrollmentStatus === 'enrolled' ? (
-                                <Play className="w-5 h-5 text-blue-500" />
-                              ) : (
-                                <Lock className="w-5 h-5 text-gray-400" />
-                              )}
-                              <span className={`${lesson.completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
-                                {lesson.title}
-                              </span>
-                              <span className={`text-xs px-2 py-1 rounded ${
-                                lesson.type === 'video' ? 'bg-blue-100 text-blue-800' :
-                                lesson.type === 'hands-on' ? 'bg-green-100 text-green-800' :
-                                'bg-purple-100 text-purple-800'
-                              }`}>
-                                {lesson.type}
+                        {module.lessons.map((lesson, lessonIndex) => {
+                          const isCompleted = isLessonCompleted(lesson.id);
+                          const canAccess = canAccessLesson(moduleIndex, lessonIndex);
+                          
+                          return (
+                            <div key={lesson.id} className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                {isCompleted ? (
+                                  <CheckCircle className="w-5 h-5 text-green-500" />
+                                ) : canAccess ? (
+                                  <button
+                                    onClick={() => handleLessonClick(lesson)}
+                                    className="w-5 h-5 text-blue-500 hover:text-blue-700"
+                                  >
+                                    {getLessonIcon(lesson.type)}
+                                  </button>
+                                ) : (
+                                  <Lock className="w-5 h-5 text-gray-400" />
+                                )}
+                                <button
+                                  onClick={() => canAccess && handleLessonClick(lesson)}
+                                  className={`text-left ${
+                                    isCompleted ? 'text-gray-500 line-through' : 
+                                    canAccess ? 'text-gray-900 hover:text-blue-600' : 
+                                    'text-gray-400'
+                                  }`}
+                                  disabled={!canAccess}
+                                >
+                                  {lesson.title}
+                                </button>
+                                <span className={`text-xs px-2 py-1 rounded ${
+                                  lesson.type === 'video' ? 'bg-blue-100 text-blue-800' :
+                                  lesson.type === 'reading' ? 'bg-green-100 text-green-800' :
+                                  lesson.type === 'interactive' ? 'bg-purple-100 text-purple-800' :
+                                  'bg-orange-100 text-orange-800'
+                                }`}>
+                                  {lesson.type}
+                                </span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm text-gray-500">{lesson.duration}</span>
+                                {canAccess && !isCompleted && (
+                                  <button
+                                    onClick={() => markLessonComplete(lesson.id)}
+                                    className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
+                                  >
+                                    Mark Complete
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        
+                        {module.quiz && (
+                          <div className="border-t pt-3 mt-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <Quiz className="w-5 h-5 text-orange-500" />
+                                <span className="text-gray-900">{module.quiz.title}</span>
+                                <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                                  Quiz
+                                </span>
+                              </div>
+                              <span className="text-sm text-gray-500">
+                                {module.quiz.questions.length} questions
                               </span>
                             </div>
-                            <span className="text-sm text-gray-500">{lesson.duration}</span>
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {activeTab === 'instructor' && (
+                <div className="space-y-6">
+                  <div className="flex items-start space-x-4">
+                    <img
+                      src={course.instructorAvatar}
+                      alt={course.instructor}
+                      className="w-20 h-20 rounded-full object-cover"
+                    />
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{course.instructor}</h3>
+                      <p className="text-gray-600 mt-2">{course.instructorBio}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-600">{course.students.toLocaleString()}</div>
+                      <div className="text-sm text-gray-600">Students</div>
+                    </div>
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">{course.rating}</div>
+                      <div className="text-sm text-gray-600">Rating</div>
+                    </div>
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <div className="text-2xl font-bold text-purple-600">5+</div>
+                      <div className="text-sm text-gray-600">Courses</div>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -251,53 +432,37 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ courseId }) => {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-gray-900">Student Reviews</h3>
-                    <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                      Write Review
-                    </button>
+                    {enrollment && (
+                      <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        Write Review
+                      </button>
+                    )}
                   </div>
+                  
                   <div className="space-y-4">
-                    {course.reviews.map((review) => (
-                      <div key={review.id} className="border border-gray-200 rounded-lg p-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center space-x-2">
-                            <span className="font-medium text-gray-900">{review.user}</span>
+                            <span className="font-medium text-gray-900">Student {i}</span>
                             <div className="flex items-center">
-                              {[...Array(5)].map((_, i) => (
+                              {[...Array(5)].map((_, j) => (
                                 <Star
-                                  key={i}
+                                  key={j}
                                   className={`w-4 h-4 ${
-                                    i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                    j < 4 ? 'text-yellow-400 fill-current' : 'text-gray-300'
                                   }`}
                                 />
                               ))}
                             </div>
                           </div>
-                          <span className="text-sm text-gray-500">
-                            {new Date(review.date).toLocaleDateString()}
-                          </span>
+                          <span className="text-sm text-gray-500">2 days ago</span>
                         </div>
-                        <p className="text-gray-700">{review.comment}</p>
+                        <p className="text-gray-700">
+                          Great course! The instructor explains concepts clearly and the hands-on projects are very helpful.
+                        </p>
                       </div>
                     ))}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'instructor' && (
-                <div className="space-y-6">
-                  <div className="flex items-start space-x-4">
-                    <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-xl">SC</span>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{course.instructor}</h3>
-                      <p className="text-gray-600">Senior Data Scientist & ML Engineer</p>
-                      <p className="text-gray-700 mt-2">
-                        Dr. Sarah Chen has over 10 years of experience in machine learning and data science. 
-                        She has worked at leading tech companies and has published numerous research papers 
-                        in the field of artificial intelligence.
-                      </p>
-                    </div>
                   </div>
                 </div>
               )}
@@ -307,6 +472,34 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ courseId }) => {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Course Progress (if enrolled) */}
+          {enrollment && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Progress</h3>
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600">{enrollment.progress}%</div>
+                  <div className="text-sm text-gray-600">Complete</div>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-300" 
+                    style={{width: `${enrollment.progress}%`}}
+                  ></div>
+                </div>
+                <div className="text-sm text-gray-600 text-center">
+                  {enrollment.completedLessons.length} of {course.totalLessons} lessons completed
+                </div>
+                {enrollment.progress === 100 && (
+                  <button className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2">
+                    <Award className="w-4 h-4" />
+                    <span>Get Certificate</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Course Info */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Course Information</h3>
@@ -318,6 +511,10 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ courseId }) => {
               <div className="flex justify-between">
                 <span className="text-gray-600">Level</span>
                 <span className="font-medium">{course.level}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Lessons</span>
+                <span className="font-medium">{course.totalLessons}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Students</span>
@@ -339,46 +536,73 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ courseId }) => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">This Course Includes</h3>
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
-                <Play className="w-5 h-5 text-blue-500" />
-                <span className="text-gray-700">24 hours of video content</span>
+                <Video className="w-5 h-5 text-blue-500" />
+                <span className="text-gray-700">HD video lectures</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Download className="w-5 h-5 text-green-500" />
                 <span className="text-gray-700">Downloadable resources</span>
               </div>
               <div className="flex items-center space-x-2">
-                <MessageCircle className="w-5 h-5 text-purple-500" />
-                <span className="text-gray-700">Discussion forum access</span>
+                <Code className="w-5 h-5 text-purple-500" />
+                <span className="text-gray-700">Hands-on projects</span>
               </div>
               <div className="flex items-center space-x-2">
-                <CheckCircle className="w-5 h-5 text-orange-500" />
-                <span className="text-gray-700">Completion certificate</span>
+                <MessageCircle className="w-5 h-5 text-orange-500" />
+                <span className="text-gray-700">Q&A support</span>
               </div>
-            </div>
-          </div>
-
-          {/* Related Courses */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Related Courses</h3>
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex space-x-3">
-                  <img 
-                    src={`https://images.pexels.com/photos/${574071 + i}/pexels-photo-${574071 + i}.jpeg?auto=compress&cs=tinysrgb&w=100`}
-                    alt="Course"
-                    className="w-16 h-12 object-cover rounded"
-                  />
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900">Python for Data Science</h4>
-                    <p className="text-xs text-gray-600">Dr. Mike Johnson</p>
-                    <p className="text-xs text-blue-600">$99</p>
-                  </div>
-                </div>
-              ))}
+              <div className="flex items-center space-x-2">
+                <Award className="w-5 h-5 text-yellow-500" />
+                <span className="text-gray-700">Certificate of completion</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Video Player Modal */}
+      {showVideoPlayer && currentLesson && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-75 z-50"
+            onClick={() => setShowVideoPlayer(false)}
+          />
+          <div className="fixed inset-4 bg-white rounded-xl z-50 overflow-hidden">
+            <div className="flex flex-col h-full">
+              <div className="flex items-center justify-between p-4 border-b">
+                <h2 className="text-lg font-semibold">{currentLesson.title}</h2>
+                <button
+                  onClick={() => setShowVideoPlayer(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="flex-1 bg-black flex items-center justify-center">
+                <div className="text-white text-center">
+                  <Play className="w-16 h-16 mx-auto mb-4" />
+                  <p>Video Player Placeholder</p>
+                  <p className="text-sm opacity-75">Duration: {currentLesson.duration}</p>
+                </div>
+              </div>
+              <div className="p-4 border-t">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-medium">{currentLesson.title}</h3>
+                    <p className="text-sm text-gray-600">{currentLesson.content}</p>
+                  </div>
+                  <button
+                    onClick={() => markLessonComplete(currentLesson.id)}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Mark Complete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
