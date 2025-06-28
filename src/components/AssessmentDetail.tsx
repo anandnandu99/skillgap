@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Clock, CheckCircle, XCircle, Award, RotateCcw, ArrowRight, ArrowLeft, AlertCircle, Download, Share2 } from 'lucide-react';
 import { User, userStorage, AssessmentResult, Activity, Certificate } from '../utils/userStorage';
+import { emailService } from '../utils/emailService';
 
 interface Question {
   id: number;
@@ -403,6 +404,9 @@ const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
     };
     userStorage.saveActivity(activity);
 
+    // Send assessment completion email
+    emailService.sendAssessmentCompletionEmail(user, result);
+
     // Save certificate if passed
     if (passed && result.certificateId) {
       const certificate: Certificate = {
@@ -416,6 +420,9 @@ const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
         certificateId: result.certificateId
       };
       userStorage.saveCertificate(certificate);
+
+      // Send certificate email
+      emailService.sendCertificateEmail(user, certificate);
 
       // Save certificate activity
       const certActivity: Activity = {
@@ -616,7 +623,7 @@ const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
               {passed ? `Congratulations! You earned the "${assessment.badge}" badge!` : 'Keep studying and try again!'}
             </p>
             {passed && (
-              <p className="text-gray-600 mt-2">Your certificate is ready for download</p>
+              <p className="text-gray-600 mt-2">Your certificate is ready for download and an email has been sent to you!</p>
             )}
           </div>
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { GraduationCap, Eye, EyeOff, Mail, Lock, User, Briefcase, MapPin, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
 import { userStorage, User as UserType } from '../utils/userStorage';
+import { emailService } from '../utils/emailService';
 
 interface RegisterProps {
   onRegister: (userData: UserType) => void;
@@ -161,6 +162,9 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
         skills: [],
         interests: []
       });
+      
+      // Send welcome email
+      emailService.sendWelcomeEmail(user);
       
       onRegister(user);
     } catch (error) {
