@@ -1,7 +1,17 @@
 import React from 'react';
 import { PlayCircle, Clock, CheckCircle, BookOpen, Award } from 'lucide-react';
+import { User, userStorage } from '../utils/userStorage';
 
-const ContinueLearning = () => {
+interface ContinueLearningProps {
+  user: User;
+}
+
+const ContinueLearning: React.FC<ContinueLearningProps> = ({ user }) => {
+  // Get user-specific data
+  const userActivities = userStorage.getUserActivities(user.id);
+  const userAssessments = userStorage.getUserAssessmentResults(user.id);
+  const userCertificates = userStorage.getUserCertificates(user.id);
+
   const inProgressCourses = [
     {
       id: 1,
@@ -71,35 +81,9 @@ const ContinueLearning = () => {
     }
   ];
 
-  const recentQuizzes = [
-    {
-      id: 1,
-      title: 'React Hooks Quiz',
-      score: 85,
-      totalQuestions: 20,
-      correctAnswers: 17,
-      completedDate: '2024-01-18',
-      difficulty: 'Intermediate'
-    },
-    {
-      id: 2,
-      title: 'Node.js Fundamentals Quiz',
-      score: 92,
-      totalQuestions: 15,
-      correctAnswers: 14,
-      completedDate: '2024-01-16',
-      difficulty: 'Beginner'
-    },
-    {
-      id: 3,
-      title: 'Database Optimization Quiz',
-      score: 78,
-      totalQuestions: 12,
-      correctAnswers: 9,
-      completedDate: '2024-01-14',
-      difficulty: 'Advanced'
-    }
-  ];
+  // Calculate stats
+  const completedCoursesCount = userActivities.filter(a => a.type === 'course_completed').length + completedCourses.length;
+  const quizzesTaken = userAssessments.length;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -123,7 +107,7 @@ const ContinueLearning = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-100">Completed Courses</p>
-              <p className="text-3xl font-bold">{completedCourses.length}</p>
+              <p className="text-3xl font-bold">{completedCoursesCount}</p>
             </div>
             <CheckCircle className="w-10 h-10 text-green-200" />
           </div>
@@ -131,8 +115,8 @@ const ContinueLearning = () => {
         <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-purple-100">Quizzes Taken</p>
-              <p className="text-3xl font-bold">{recentQuizzes.length}</p>
+              <p className="text-purple-100">Assessments Taken</p>
+              <p className="text-3xl font-bold">{quizzesTaken}</p>
             </div>
             <Award className="w-10 h-10 text-purple-200" />
           </div>
@@ -251,61 +235,72 @@ const ContinueLearning = () => {
         </div>
       </div>
 
-      {/* Recent Quizzes */}
+      {/* Recent Assessment Results */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Quiz Results</h2>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quiz</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Questions</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {recentQuizzes.map((quiz) => (
-                  <tr key={quiz.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{quiz.title}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <span className={`text-lg font-bold ${quiz.score >= 90 ? 'text-green-600' : quiz.score >= 70 ? 'text-yellow-600' : 'text-red-600'}`}>
-                          {quiz.score}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {quiz.correctAnswers}/{quiz.totalQuestions}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        quiz.difficulty === 'Beginner' ? 'bg-green-100 text-green-800' :
-                        quiz.difficulty === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {quiz.difficulty}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {new Date(quiz.completedDate).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                        Review
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Assessment Results</h2>
+        {userAssessments.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+            <Award className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No assessments taken yet</h3>
+            <p className="text-gray-600 mb-4">Take your first assessment to track your progress</p>
+            <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+              Start Assessment
+            </button>
           </div>
-        </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assessment</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Questions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {userAssessments.slice(0, 5).map((assessment) => (
+                    <tr key={assessment.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{assessment.title}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <span className={`text-lg font-bold ${assessment.score >= 70 ? 'text-green-600' : 'text-red-600'}`}>
+                            {assessment.score}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {assessment.correctAnswers}/{assessment.totalQuestions}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          assessment.difficulty === 'beginner' ? 'bg-green-100 text-green-800' :
+                          assessment.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {assessment.difficulty}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {new Date(assessment.completedDate).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                          Review
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

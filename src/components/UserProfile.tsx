@@ -1,115 +1,88 @@
 import React, { useState } from 'react';
 import { User, Edit3, Camera, Award, BookOpen, Target, TrendingUp, Calendar, Mail, Phone, MapPin, Briefcase, Download, Eye, Star } from 'lucide-react';
+import { User as UserType, userStorage } from '../utils/userStorage';
 
 interface UserProfileProps {
-  user: {
-    name: string;
-    email: string;
-    role: string;
-  };
+  user: UserType;
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   
-  const [profileData, setProfileData] = useState({
-    name: user.name || 'John Doe',
-    email: user.email || 'john.doe@hexaware.com',
-    phone: '+1 (555) 123-4567',
-    location: 'New York, NY',
-    department: 'Software Engineering',
-    role: user.role || 'Senior Developer',
-    joinDate: '2022-03-15',
-    bio: 'Passionate full-stack developer with 5+ years of experience in React, Node.js, and cloud technologies. Always eager to learn new technologies and share knowledge with the team.',
-    skills: ['JavaScript', 'React', 'Node.js', 'Python', 'AWS', 'Docker', 'MongoDB'],
-    interests: ['Machine Learning', 'Cloud Architecture', 'DevOps', 'Mobile Development']
-  });
+  // Get user-specific data from storage
+  const assessmentResults = userStorage.getUserAssessmentResults(user.id);
+  const certificates = userStorage.getUserCertificates(user.id);
+  const activities = userStorage.getUserActivities(user.id);
 
-  const achievements = [
-    { id: 1, title: 'JavaScript Master', description: 'Completed advanced JavaScript course', date: '2024-01-15', icon: '🏆' },
-    { id: 2, title: 'React Expert', description: 'Mastered React patterns and hooks', date: '2024-01-10', icon: '⚛️' },
-    { id: 3, title: 'Cloud Practitioner', description: 'AWS Cloud fundamentals certified', date: '2023-12-20', icon: '☁️' },
-    { id: 4, title: 'Team Player', description: 'Helped 10+ colleagues with learning', date: '2023-12-15', icon: '🤝' }
-  ];
-
+  // Calculate learning stats
   const learningStats = {
-    totalCourses: 24,
-    completedCourses: 18,
+    totalCourses: activities.filter(a => a.type === 'course_completed').length + 6, // Add some base courses
+    completedCourses: activities.filter(a => a.type === 'course_completed').length,
     inProgressCourses: 3,
     totalHours: 156,
-    averageScore: 87,
+    averageScore: assessmentResults.length > 0 
+      ? Math.round(assessmentResults.reduce((acc, result) => acc + result.score, 0) / assessmentResults.length)
+      : 0,
     streak: 15,
-    totalAssessments: 12,
-    passedAssessments: 10,
-    certificatesEarned: 8
+    totalAssessments: assessmentResults.length,
+    passedAssessments: assessmentResults.filter(r => r.status === 'passed').length,
+    certificatesEarned: certificates.length
   };
 
-  // Assessment Results from recent activity
-  const assessmentResults = [
+  const recentAchievements = [
+    ...certificates.slice(0, 2).map(cert => ({
+      id: cert.id,
+      title: cert.badge,
+      description: `Completed ${cert.title}`,
+      date: cert.completedDate,
+      icon: '🏆',
+      type: 'certificate'
+    })),
     {
-      id: 1,
-      title: 'JavaScript Fundamentals Assessment',
-      score: 85,
-      maxScore: 100,
-      completedDate: '2024-01-18',
-      status: 'passed' as const,
-      percentile: 78,
-      badge: 'JavaScript Foundation',
-      timeSpent: '25 min',
-      correctAnswers: 21,
-      totalQuestions: 25,
-      certificateId: 'CERT-JS-001',
-      difficulty: 'Beginner'
+      id: 'streak',
+      title: 'Learning Streak',
+      description: '15-day learning streak',
+      date: new Date().toISOString(),
+      icon: '🔥',
+      type: 'streak'
     },
     {
-      id: 2,
-      title: 'React Advanced Patterns',
-      score: 88,
-      maxScore: 100,
-      completedDate: '2024-01-10',
-      status: 'passed' as const,
-      percentile: 82,
-      badge: 'React Expert',
-      timeSpent: '41 min',
-      correctAnswers: 31,
-      totalQuestions: 35,
-      certificateId: 'CERT-REACT-002',
-      difficulty: 'Advanced'
-    },
-    {
-      id: 3,
-      title: 'Python Data Analysis',
-      score: 72,
-      maxScore: 100,
-      completedDate: '2024-01-15',
-      status: 'passed' as const,
-      percentile: 65,
-      badge: 'Data Analyst',
-      timeSpent: '42 min',
-      correctAnswers: 18,
-      totalQuestions: 25,
-      certificateId: 'CERT-PY-003',
-      difficulty: 'Intermediate'
-    },
-    {
-      id: 4,
-      title: 'Cloud Security Basics',
-      score: 45,
-      maxScore: 100,
-      completedDate: '2024-01-12',
-      status: 'failed' as const,
-      percentile: 32,
-      badge: null,
-      timeSpent: '38 min',
-      correctAnswers: 11,
-      totalQuestions: 25,
-      certificateId: null,
-      difficulty: 'Intermediate'
+      id: 'helpful',
+      title: 'Helpful Peer',
+      description: 'Helped 5 colleagues this week',
+      date: new Date(Date.now() - 86400000).toISOString(),
+      icon: '🤝',
+      type: 'social'
     }
   ];
 
-  const certificates = assessmentResults.filter(result => result.certificateId);
+  const learningGoals = [
+    {
+      id: 1,
+      title: 'Complete Full Stack Development Path',
+      progress: 75,
+      target: 100,
+      deadline: '2024-03-01',
+      status: 'on-track'
+    },
+    {
+      id: 2,
+      title: 'Achieve AWS Certification',
+      progress: 45,
+      target: 100,
+      deadline: '2024-04-15',
+      status: 'behind'
+    },
+    {
+      id: 3,
+      title: 'Master Machine Learning Basics',
+      progress: 30,
+      target: 100,
+      deadline: '2024-05-30',
+      status: 'on-track'
+    }
+  ];
 
   const skillProgress = [
     { skill: 'JavaScript', level: 'Expert', progress: 95, lastAssessed: '2024-01-18' },
@@ -123,7 +96,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
   const generateCertificate = (result: any) => {
     // This would typically generate a PDF certificate
     const certificateData = {
-      recipientName: profileData.name,
+      recipientName: user.name,
       assessmentTitle: result.title,
       score: result.score,
       completionDate: result.completedDate,
@@ -161,8 +134,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
             <div className="flex-1 pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{profileData.name}</h1>
-                  <p className="text-gray-600">{profileData.role} • {profileData.department}</p>
+                  <h1 className="text-2xl font-bold text-gray-900">{user.name}</h1>
+                  <p className="text-gray-600">{user.role} • {user.department}</p>
                   <div className="flex items-center space-x-4 mt-2">
                     <div className="flex items-center space-x-1">
                       <Award className="w-4 h-4 text-yellow-500" />
@@ -213,8 +186,10 @@ const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-purple-100">Average Score</p>
-              <p className="text-3xl font-bold">{Math.round(assessmentResults.filter(r => r.status === 'passed').reduce((acc, r) => acc + r.score, 0) / assessmentResults.filter(r => r.status === 'passed').length)}%</p>
-              <p className="text-purple-100 text-sm">Excellent performance!</p>
+              <p className="text-3xl font-bold">{learningStats.averageScore}%</p>
+              <p className="text-purple-100 text-sm">
+                {learningStats.averageScore >= 80 ? 'Excellent!' : learningStats.averageScore >= 70 ? 'Good work!' : 'Keep improving!'}
+              </p>
             </div>
             <Star className="w-10 h-10 text-purple-200" />
           </div>
@@ -262,34 +237,41 @@ const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
                     <Mail className="w-5 h-5 text-gray-400" />
                     <div>
                       <p className="text-sm text-gray-600">Email</p>
-                      <p className="font-medium">{profileData.email}</p>
+                      <p className="font-medium">{user.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Phone className="w-5 h-5 text-gray-400" />
                     <div>
                       <p className="text-sm text-gray-600">Phone</p>
-                      <p className="font-medium">{profileData.phone}</p>
+                      <p className="font-medium">{user.phone || 'Not provided'}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
                     <MapPin className="w-5 h-5 text-gray-400" />
                     <div>
                       <p className="text-sm text-gray-600">Location</p>
-                      <p className="font-medium">{profileData.location}</p>
+                      <p className="font-medium">{user.location}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Briefcase className="w-5 h-5 text-gray-400" />
                     <div>
                       <p className="text-sm text-gray-600">Department</p>
-                      <p className="font-medium">{profileData.department}</p>
+                      <p className="font-medium">{user.department}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Calendar className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <p className="text-sm text-gray-600">Joined</p>
+                      <p className="font-medium">{new Date(user.joinDate).toLocaleDateString()}</p>
                     </div>
                   </div>
                 </div>
                 <div className="mt-6">
                   <p className="text-sm text-gray-600 mb-2">Bio</p>
-                  <p className="text-gray-800">{profileData.bio}</p>
+                  <p className="text-gray-800">{user.bio || 'No bio provided'}</p>
                 </div>
               </div>
 
@@ -297,7 +279,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
               <div>
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Recent Achievements</h2>
                 <div className="space-y-4">
-                  {achievements.map((achievement) => (
+                  {recentAchievements.map((achievement) => (
                     <div key={achievement.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
                       <div className="text-2xl">{achievement.icon}</div>
                       <div className="flex-1">
@@ -317,141 +299,145 @@ const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
           {activeTab === 'assessments' && (
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-6">Assessment Results History</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assessment</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Badge</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {assessmentResults.map((result) => (
-                      <tr key={result.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{result.title}</div>
-                            <div className="text-xs text-gray-500">
-                              {result.correctAnswers}/{result.totalQuestions} correct • {result.difficulty}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <span className={`text-lg font-bold ${result.score >= 70 ? 'text-green-600' : 'text-red-600'}`}>
-                              {result.score}%
-                            </span>
-                            <span className="text-xs text-gray-500 ml-2">({result.percentile}th percentile)</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            result.status === 'passed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {result.timeSpent}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {result.badge ? (
-                            <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
-                              {result.badge}
-                            </span>
-                          ) : (
-                            <span className="text-gray-400 text-xs">No badge</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {new Date(result.completedDate).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex space-x-2">
-                            <button className="text-blue-600 hover:text-blue-700 text-sm">
-                              View Details
-                            </button>
-                            {result.certificateId && (
-                              <button 
-                                onClick={() => generateCertificate(result)}
-                                className="text-green-600 hover:text-green-700 text-sm"
-                              >
-                                Certificate
-                              </button>
-                            )}
-                          </div>
-                        </td>
+              {assessmentResults.length === 0 ? (
+                <div className="text-center py-12">
+                  <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No assessments taken yet</h3>
+                  <p className="text-gray-600">Start taking assessments to track your progress</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assessment</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Badge</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {assessmentResults.map((result) => (
+                        <tr key={result.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{result.title}</div>
+                              <div className="text-xs text-gray-500">
+                                {result.correctAnswers}/{result.totalQuestions} correct • {result.difficulty}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <span className={`text-lg font-bold ${result.score >= 70 ? 'text-green-600' : 'text-red-600'}`}>
+                                {result.score}%
+                              </span>
+                              <span className="text-xs text-gray-500 ml-2">({result.percentile}th percentile)</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              result.status === 'passed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {result.timeSpent}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {result.badge ? (
+                              <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
+                                {result.badge}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 text-xs">No badge</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {new Date(result.completedDate).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex space-x-2">
+                              <button className="text-blue-600 hover:text-blue-700 text-sm">
+                                View Details
+                              </button>
+                              {result.certificateId && (
+                                <button 
+                                  onClick={() => generateCertificate(result)}
+                                  className="text-green-600 hover:text-green-700 text-sm"
+                                >
+                                  Certificate
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
           {activeTab === 'certificates' && (
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-6">Earned Certificates</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {certificates.map((cert) => (
-                  <div key={cert.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg flex items-center justify-center">
-                        <Award className="w-6 h-6 text-white" />
-                      </div>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        cert.difficulty === 'Beginner' ? 'bg-green-100 text-green-800' :
-                        cert.difficulty === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {cert.difficulty}
-                      </span>
-                    </div>
-                    
-                    <h3 className="font-semibold text-gray-900 mb-2">{cert.badge}</h3>
-                    <p className="text-sm text-gray-600 mb-3">{cert.title}</p>
-                    
-                    <div className="space-y-2 mb-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Score:</span>
-                        <span className="font-medium text-green-600">{cert.score}%</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Certificate ID:</span>
-                        <span className="font-mono text-xs">{cert.certificateId}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Issued:</span>
-                        <span>{new Date(cert.completedDate).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => generateCertificate(cert)}
-                        className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center justify-center space-x-1"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>Download</span>
-                      </button>
-                      <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {certificates.length === 0 && (
+              {certificates.length === 0 ? (
                 <div className="text-center py-12">
                   <Award className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No certificates yet</h3>
                   <p className="text-gray-600">Complete assessments to earn certificates</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {certificates.map((cert) => (
+                    <div key={cert.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg flex items-center justify-center">
+                          <Award className="w-6 h-6 text-white" />
+                        </div>
+                        <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                          Verified
+                        </span>
+                      </div>
+                      
+                      <h3 className="font-semibold text-gray-900 mb-2">{cert.badge}</h3>
+                      <p className="text-sm text-gray-600 mb-3">{cert.title}</p>
+                      
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Score:</span>
+                          <span className="font-medium text-green-600">{cert.score}%</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Certificate ID:</span>
+                          <span className="font-mono text-xs">{cert.certificateId}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Issued:</span>
+                          <span>{new Date(cert.completedDate).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={() => generateCertificate(cert)}
+                          className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center justify-center space-x-1"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Download</span>
+                        </button>
+                        <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

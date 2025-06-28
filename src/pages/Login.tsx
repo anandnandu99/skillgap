@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCap, Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
+import { GraduationCap, Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
+import { userStorage, User } from '../utils/userStorage';
 
 interface LoginProps {
-  onLogin: (userData: any) => void;
+  onLogin: (userData: User) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -41,8 +42,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
     }
 
     setErrors(newErrors);
@@ -57,25 +56,46 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
 
     setIsLoading(true);
+    setErrors({});
 
-    // Simulate API call
-    setTimeout(() => {
-      // Mock authentication - in real app, this would be an API call
-      const userData = {
-        name: 'John Doe',
-        email: formData.email,
-        role: 'Senior Developer',
-        department: 'Software Engineering'
-      };
+    try {
+      // Authenticate user
+      const user = userStorage.authenticateUser(formData.email, formData.password);
       
-      onLogin(userData);
+      if (user) {
+        onLogin(user);
+      } else {
+        setErrors({ general: 'Invalid email or password' });
+      }
+    } catch (error) {
+      setErrors({ general: 'An error occurred during login' });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleDemoLogin = () => {
+    // Create a demo user if it doesn't exist
+    const demoEmail = 'john.doe@hexaware.com';
+    let demoUser = userStorage.getUserByEmail(demoEmail);
+    
+    if (!demoUser) {
+      demoUser = userStorage.registerUser({
+        name: 'John Doe',
+        email: demoEmail,
+        password: 'demo123',
+        role: 'Senior Developer',
+        department: 'Software Engineering',
+        location: 'New York, NY',
+        phone: '+1 (555) 123-4567',
+        bio: 'Passionate full-stack developer with 5+ years of experience in React, Node.js, and cloud technologies.',
+        skills: ['JavaScript', 'React', 'Node.js', 'Python', 'AWS', 'Docker'],
+        interests: ['Machine Learning', 'Cloud Architecture', 'DevOps']
+      });
+    }
+    
     setFormData({
-      email: 'john.doe@hexaware.com',
+      email: demoEmail,
       password: 'demo123'
     });
   };
@@ -113,6 +133,16 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </button>
           </div>
         </div>
+
+        {/* Error Message */}
+        {errors.general && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+              <p className="text-sm text-red-700">{errors.general}</p>
+            </div>
+          </div>
+        )}
 
         {/* Login Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>

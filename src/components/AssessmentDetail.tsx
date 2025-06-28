@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Clock, CheckCircle, XCircle, Award, RotateCcw, ArrowRight, ArrowLeft, AlertCircle, Download, Share2 } from 'lucide-react';
+import { User, userStorage, AssessmentResult, Activity, Certificate } from '../utils/userStorage';
 
 interface Question {
   id: number;
@@ -24,24 +25,11 @@ interface Assessment {
   badge: string;
 }
 
-interface AssessmentResult {
-  id: string;
-  assessmentId: string;
-  title: string;
-  score: number;
-  maxScore: number;
-  completedDate: string;
-  status: 'passed' | 'failed';
-  percentile: number;
-  badge: string | null;
-  timeSpent: string;
-  correctAnswers: number;
-  totalQuestions: number;
-  certificateId: string | null;
-  difficulty: string;
+interface AssessmentDetailProps {
+  user: User;
 }
 
-const AssessmentDetail = () => {
+const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -379,6 +367,7 @@ const AssessmentDetail = () => {
     
     const result: AssessmentResult = {
       id: Date.now().toString(),
+      userId: user.id,
       assessmentId: assessment.id,
       title: assessment.title,
       score,
@@ -396,8 +385,52 @@ const AssessmentDetail = () => {
 
     setAssessmentResult(result);
     
-    // In a real app, this would be saved to a database
-    console.log('Assessment result saved:', result);
+    // Save to storage
+    userStorage.saveAssessmentResult(result);
+    
+    // Save activity
+    const activity: Activity = {
+      id: Date.now().toString(),
+      userId: user.id,
+      type: 'assessment_completed',
+      title: `Completed ${assessment.title}`,
+      timestamp: new Date().toISOString(),
+      data: {
+        score,
+        status: passed ? 'passed' : 'failed',
+        badge: passed ? assessment.badge : null
+      }
+    };
+    userStorage.saveActivity(activity);
+
+    // Save certificate if passed
+    if (passed && result.certificateId) {
+      const certificate: Certificate = {
+        id: result.certificateId,
+        userId: user.id,
+        assessmentId: assessment.id,
+        title: assessment.title,
+        badge: assessment.badge,
+        score,
+        completedDate: new Date().toISOString(),
+        certificateId: result.certificateId
+      };
+      userStorage.saveCertificate(certificate);
+
+      // Save certificate activity
+      const certActivity: Activity = {
+        id: (Date.now() + 1).toString(),
+        userId: user.id,
+        type: 'certificate_earned',
+        title: `Earned ${assessment.badge} certificate`,
+        timestamp: new Date().toISOString(),
+        data: {
+          certificateId: result.certificateId,
+          badge: assessment.badge
+        }
+      };
+      userStorage.saveActivity(certActivity);
+    }
   };
 
   const generateCertificate = () => {
@@ -437,7 +470,7 @@ const AssessmentDetail = () => {
           {/* Certificate Body */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8 mb-8 border-2 border-blue-200">
             <div className="text-center">
-              <h2 className="text-4xl font-bold text-blue-900 mb-4">John Doe</h2>
+              <h2 className="text-4xl font-bold text-blue-900 mb-4">{user.name}</h2>
               <p className="text-lg text-gray-700 mb-6">has successfully completed the</p>
               <h3 className="text-2xl font-bold text-gray-900 mb-6">{assessmentResult.title}</h3>
               

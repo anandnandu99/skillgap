@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCap, Eye, EyeOff, Mail, Lock, User, Briefcase, MapPin, ArrowRight, CheckCircle } from 'lucide-react';
+import { GraduationCap, Eye, EyeOff, Mail, Lock, User, Briefcase, MapPin, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
+import { userStorage, User as UserType } from '../utils/userStorage';
 
 interface RegisterProps {
-  onRegister: (userData: any) => void;
+  onRegister: (userData: UserType) => void;
 }
 
 const Register: React.FC<RegisterProps> = ({ onRegister }) => {
@@ -17,6 +18,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
     department: '',
     role: '',
     location: '',
+    phone: '',
     agreeToTerms: false
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -81,6 +83,8 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
+    } else if (userStorage.getUserByEmail(formData.email)) {
+      newErrors.email = 'An account with this email already exists';
     }
 
     if (!formData.password) {
@@ -142,20 +146,28 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
     }
 
     setIsLoading(true);
+    setErrors({});
 
-    // Simulate API call
-    setTimeout(() => {
-      const userData = {
+    try {
+      const user = userStorage.registerUser({
         name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
+        password: formData.password,
         role: formData.role,
         department: formData.department,
-        location: formData.location
-      };
+        location: formData.location,
+        phone: formData.phone,
+        bio: `${formData.role} at ${formData.department} department. Passionate about learning and professional development.`,
+        skills: [],
+        interests: []
+      });
       
-      onRegister(userData);
+      onRegister(user);
+    } catch (error) {
+      setErrors({ general: 'An error occurred during registration' });
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   return (
@@ -196,6 +208,16 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
             <span className="ml-2 text-sm font-medium">Profile</span>
           </div>
         </div>
+
+        {/* Error Message */}
+        {errors.general && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+              <p className="text-sm text-red-700">{errors.general}</p>
+            </div>
+          </div>
+        )}
 
         {/* Step 1: Account Information */}
         {currentStep === 1 && (
@@ -465,6 +487,22 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
                 {errors.location && (
                   <p className="mt-1 text-sm text-red-600">{errors.location}</p>
                 )}
+              </div>
+
+              {/* Phone Field */}
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number (Optional)
+                </label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="+1 (555) 123-4567"
+                />
               </div>
 
               {/* Terms and Conditions */}

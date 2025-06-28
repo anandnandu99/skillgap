@@ -1,55 +1,37 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Target, TrendingUp, Award, Clock, Users, CheckCircle, Star } from 'lucide-react';
+import { User, userStorage } from '../utils/userStorage';
 
-const HomePage = () => {
-  // Recent assessment activity
-  const recentActivity = [
-    {
-      id: 1,
-      type: 'assessment_completed',
-      title: 'JavaScript Fundamentals Assessment',
-      score: 85,
-      status: 'passed',
-      badge: 'JavaScript Foundation',
-      timestamp: '2 hours ago',
-      icon: '🏆'
-    },
-    {
-      id: 2,
-      type: 'course_completed',
-      title: 'React Advanced Patterns',
-      progress: 100,
-      timestamp: '1 day ago',
-      icon: '⚛️'
-    },
-    {
-      id: 3,
-      type: 'certificate_earned',
-      title: 'Data Science Fundamentals',
-      certificateId: 'CERT-DS-001',
-      timestamp: '3 days ago',
-      icon: '📊'
-    },
-    {
-      id: 4,
-      type: 'study_group_joined',
-      title: 'Full Stack Developers Group',
-      members: 156,
-      timestamp: '5 days ago',
-      icon: '👥'
-    }
-  ];
+interface HomePageProps {
+  user: User;
+}
+
+const HomePage: React.FC<HomePageProps> = ({ user }) => {
+  // Get user-specific data
+  const userActivities = userStorage.getUserActivities(user.id);
+  const userAssessments = userStorage.getUserAssessmentResults(user.id);
+  const userCertificates = userStorage.getUserCertificates(user.id);
+
+  // Calculate stats
+  const completedCourses = userActivities.filter(a => a.type === 'course_completed').length;
+  const passedAssessments = userAssessments.filter(a => a.status === 'passed').length;
+  const averageScore = userAssessments.length > 0 
+    ? Math.round(userAssessments.reduce((acc, result) => acc + result.score, 0) / userAssessments.length)
+    : 0;
+
+  // Recent activity (last 10 items)
+  const recentActivity = userActivities.slice(0, 10);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Hero Section */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Personalized Learning & Skill-Gap Analysis
+          Welcome back, {user.name.split(' ')[0]}!
         </h1>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          Leverage AI-powered multi-agent framework to deliver training that truly matches each employee's existing skills and evolving gaps.
+          Continue your personalized learning journey with AI-powered skill development and assessment tracking.
         </p>
       </div>
 
@@ -59,8 +41,8 @@ const HomePage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Courses Completed</p>
-              <p className="text-2xl font-bold text-gray-900">18</p>
-              <p className="text-xs text-green-600">+3 this month</p>
+              <p className="text-2xl font-bold text-gray-900">{completedCourses}</p>
+              <p className="text-xs text-green-600">Keep learning!</p>
             </div>
             <BookOpen className="w-8 h-8 text-blue-600" />
           </div>
@@ -69,8 +51,10 @@ const HomePage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Assessments Passed</p>
-              <p className="text-2xl font-bold text-gray-900">10</p>
-              <p className="text-xs text-green-600">83% success rate</p>
+              <p className="text-2xl font-bold text-gray-900">{passedAssessments}</p>
+              <p className="text-xs text-green-600">
+                {userAssessments.length > 0 ? `${Math.round((passedAssessments / userAssessments.length) * 100)}% success rate` : 'Start your first assessment'}
+              </p>
             </div>
             <Target className="w-8 h-8 text-green-600" />
           </div>
@@ -79,7 +63,7 @@ const HomePage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Certificates Earned</p>
-              <p className="text-2xl font-bold text-gray-900">8</p>
+              <p className="text-2xl font-bold text-gray-900">{userCertificates.length}</p>
               <p className="text-xs text-blue-600">Verified credentials</p>
             </div>
             <Award className="w-8 h-8 text-purple-600" />
@@ -88,9 +72,11 @@ const HomePage = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Learning Streak</p>
-              <p className="text-2xl font-bold text-gray-900">15 days</p>
-              <p className="text-xs text-orange-600">Keep it up!</p>
+              <p className="text-sm text-gray-600">Average Score</p>
+              <p className="text-2xl font-bold text-gray-900">{averageScore}%</p>
+              <p className="text-xs text-orange-600">
+                {averageScore >= 80 ? 'Excellent!' : averageScore >= 70 ? 'Good work!' : 'Keep improving!'}
+              </p>
             </div>
             <TrendingUp className="w-8 h-8 text-orange-600" />
           </div>
@@ -99,30 +85,30 @@ const HomePage = () => {
 
       {/* Current Learning Path */}
       <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Current Learning Path</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Learning Journey</h2>
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Full Stack Development Mastery</h3>
-              <p className="text-gray-600">Advanced React, Node.js, and Database Management</p>
+              <h3 className="text-lg font-semibold text-gray-900">Personalized Learning Path</h3>
+              <p className="text-gray-600">Based on your role as {user.role} in {user.department}</p>
             </div>
             <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-              In Progress
+              Active
             </span>
           </div>
           <div className="mb-4">
             <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Progress</span>
-              <span>68% Complete</span>
+              <span>Overall Progress</span>
+              <span>{Math.min(completedCourses * 10, 100)}% Complete</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full" style={{width: '68%'}}></div>
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full" style={{width: `${Math.min(completedCourses * 10, 100)}%`}}></div>
             </div>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center text-sm text-gray-600">
               <Clock className="w-4 h-4 mr-2" />
-              <span>Estimated completion: 3 weeks</span>
+              <span>Continue your learning journey</span>
             </div>
             <Link 
               to="/continue-learning"
@@ -193,52 +179,55 @@ const HomePage = () => {
             View All Activity →
           </Link>
         </div>
-        <div className="space-y-4">
-          {recentActivity.map((activity) => (
-            <div key={activity.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-              <div className="text-2xl">{activity.icon}</div>
-              <div className="flex-1">
-                {activity.type === 'assessment_completed' && (
-                  <>
-                    <div className="flex items-center space-x-2">
-                      <p className="font-medium text-gray-900">Completed Assessment: {activity.title}</p>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        activity.status === 'passed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {activity.score}% - {activity.status}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">Earned "{activity.badge}" badge</p>
-                  </>
-                )}
-                {activity.type === 'course_completed' && (
-                  <>
-                    <p className="font-medium text-gray-900">Completed Course: {activity.title}</p>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-20 bg-gray-200 rounded-full h-1">
-                        <div className="bg-green-500 h-1 rounded-full" style={{width: `${activity.progress}%`}}></div>
-                      </div>
-                      <span className="text-sm text-green-600">{activity.progress}%</span>
-                    </div>
-                  </>
-                )}
-                {activity.type === 'certificate_earned' && (
-                  <>
-                    <p className="font-medium text-gray-900">Certificate Earned: {activity.title}</p>
-                    <p className="text-sm text-gray-600">Certificate ID: {activity.certificateId}</p>
-                  </>
-                )}
-                {activity.type === 'study_group_joined' && (
-                  <>
-                    <p className="font-medium text-gray-900">Joined Study Group: {activity.title}</p>
-                    <p className="text-sm text-gray-600">{activity.members} members</p>
-                  </>
-                )}
-              </div>
-              <div className="text-sm text-gray-500">{activity.timestamp}</div>
+        
+        {recentActivity.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="w-8 h-8 text-gray-400" />
             </div>
-          ))}
-        </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No activity yet</h3>
+            <p className="text-gray-600 mb-4">Start your learning journey by taking an assessment or exploring courses</p>
+            <div className="flex justify-center space-x-4">
+              <Link 
+                to="/skill-assessment"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Take Assessment
+              </Link>
+              <Link 
+                to="/explore-courses"
+                className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Explore Courses
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {recentActivity.map((activity) => (
+              <div key={activity.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <div className="text-2xl">
+                  {activity.type === 'assessment_completed' && '🏆'}
+                  {activity.type === 'course_completed' && '📚'}
+                  {activity.type === 'certificate_earned' && '🎓'}
+                  {activity.type === 'study_group_joined' && '👥'}
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">{activity.title}</p>
+                  <p className="text-sm text-gray-600">
+                    {activity.type === 'assessment_completed' && `Score: ${activity.data.score}% - ${activity.data.status}`}
+                    {activity.type === 'course_completed' && 'Course completed successfully'}
+                    {activity.type === 'certificate_earned' && `Certificate ID: ${activity.data.certificateId}`}
+                    {activity.type === 'study_group_joined' && `${activity.data.members} members`}
+                  </p>
+                </div>
+                <div className="text-sm text-gray-500">
+                  {new Date(activity.timestamp).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

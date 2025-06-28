@@ -1,15 +1,28 @@
 import React from 'react';
 import { TrendingUp, Target, Award, Calendar, BookOpen, Clock, CheckCircle, Star } from 'lucide-react';
+import { User, userStorage } from '../utils/userStorage';
 
-const ProgressTracker = () => {
+interface ProgressTrackerProps {
+  user: User;
+}
+
+const ProgressTracker: React.FC<ProgressTrackerProps> = ({ user }) => {
+  // Get user-specific data
+  const userActivities = userStorage.getUserActivities(user.id);
+  const userAssessments = userStorage.getUserAssessmentResults(user.id);
+  const userCertificates = userStorage.getUserCertificates(user.id);
+
+  // Calculate overall progress
   const overallProgress = {
-    completedCourses: 18,
+    completedCourses: userActivities.filter(a => a.type === 'course_completed').length + 6, // Add some base courses
     totalCourses: 24,
     completedHours: 156,
     totalHours: 200,
-    averageScore: 87,
+    averageScore: userAssessments.length > 0 
+      ? Math.round(userAssessments.reduce((acc, result) => acc + result.score, 0) / userAssessments.length)
+      : 0,
     streak: 15,
-    badges: 12,
+    badges: userCertificates.length,
     rank: 'Advanced Learner'
   };
 
@@ -32,35 +45,27 @@ const ProgressTracker = () => {
   ];
 
   const recentAchievements = [
-    {
-      id: 1,
-      title: 'React Master',
-      description: 'Completed advanced React patterns course',
-      date: '2024-01-18',
-      icon: '⚛️',
+    ...userCertificates.slice(0, 2).map(cert => ({
+      id: cert.id,
+      title: cert.badge,
+      description: `Completed ${cert.title}`,
+      date: cert.completedDate,
+      icon: '🏆',
       type: 'course'
-    },
+    })),
     {
-      id: 2,
+      id: 'streak',
       title: 'Streak Champion',
       description: '15-day learning streak',
-      date: '2024-01-17',
+      date: new Date().toISOString(),
       icon: '🔥',
       type: 'streak'
     },
     {
-      id: 3,
-      title: 'Quiz Master',
-      description: 'Scored 95% on JavaScript fundamentals',
-      date: '2024-01-15',
-      icon: '🎯',
-      type: 'quiz'
-    },
-    {
-      id: 4,
+      id: 'helpful',
       title: 'Helpful Peer',
       description: 'Helped 5 colleagues this week',
-      date: '2024-01-14',
+      date: new Date(Date.now() - 86400000).toISOString(),
       icon: '🤝',
       type: 'social'
     }
@@ -101,7 +106,7 @@ const ProgressTracker = () => {
       </div>
 
       {/* Overall Progress Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
@@ -137,7 +142,9 @@ const ProgressTracker = () => {
             <div>
               <p className="text-purple-100">Average Score</p>
               <p className="text-2xl font-bold">{overallProgress.averageScore}%</p>
-              <p className="text-purple-100 text-sm">Excellent performance!</p>
+              <p className="text-purple-100 text-sm">
+                {overallProgress.averageScore >= 80 ? 'Excellent!' : overallProgress.averageScore >= 70 ? 'Good work!' : 'Keep improving!'}
+              </p>
             </div>
             <Star className="w-10 h-10 text-purple-200" />
           </div>
