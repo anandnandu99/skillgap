@@ -134,6 +134,25 @@ class CourseStorage {
     return courses.find(course => course.id === courseId) || null;
   }
 
+  saveCourse(course: Course): void {
+    const courses = this.getAllCourses();
+    const existingIndex = courses.findIndex(c => c.id === course.id);
+    
+    if (existingIndex >= 0) {
+      courses[existingIndex] = course;
+    } else {
+      courses.push(course);
+    }
+    
+    localStorage.setItem(this.COURSES_KEY, JSON.stringify(courses));
+  }
+
+  deleteCourse(courseId: string): void {
+    const courses = this.getAllCourses();
+    const filteredCourses = courses.filter(course => course.id !== courseId);
+    localStorage.setItem(this.COURSES_KEY, JSON.stringify(filteredCourses));
+  }
+
   getCoursesByCategory(category: string): Course[] {
     const courses = this.getAllCourses();
     return courses.filter(course => course.category === category);
@@ -298,7 +317,7 @@ class CourseStorage {
           category: 'data-science',
           level: 'advanced',
           duration: '8 weeks',
-          totalLessons: 24,
+          totalLessons: 4,
           price: 149,
           rating: 4.9,
           students: 12500,
@@ -410,7 +429,7 @@ class CourseStorage {
           category: 'mobile',
           level: 'intermediate',
           duration: '6 weeks',
-          totalLessons: 18,
+          totalLessons: 4,
           price: 129,
           rating: 4.7,
           students: 8900,
@@ -493,7 +512,7 @@ class CourseStorage {
           category: 'development',
           level: 'intermediate',
           duration: '12 weeks',
-          totalLessons: 36,
+          totalLessons: 4,
           price: 179,
           rating: 4.8,
           students: 11200,

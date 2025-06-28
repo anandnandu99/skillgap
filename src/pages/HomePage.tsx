@@ -1,13 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Target, TrendingUp, Award, Clock, Users, CheckCircle, Star } from 'lucide-react';
+import { BookOpen, Target, TrendingUp, Award, Clock, Users, CheckCircle, Star, Settings } from 'lucide-react';
 import { User, userStorage } from '../utils/userStorage';
+import CourseManager from '../components/CourseManager';
 
 interface HomePageProps {
   user: User;
 }
 
 const HomePage: React.FC<HomePageProps> = ({ user }) => {
+  const [showCourseManager, setShowCourseManager] = React.useState(false);
+  
   // Get user-specific data
   const userActivities = userStorage.getUserActivities(user.id);
   const userAssessments = userStorage.getUserAssessmentResults(user.id);
@@ -22,6 +25,11 @@ const HomePage: React.FC<HomePageProps> = ({ user }) => {
 
   // Recent activity (last 10 items)
   const recentActivity = userActivities.slice(0, 10);
+
+  // Show course manager if requested
+  if (showCourseManager) {
+    return <CourseManager onClose={() => setShowCourseManager(false)} />;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -82,6 +90,25 @@ const HomePage: React.FC<HomePageProps> = ({ user }) => {
           </div>
         </div>
       </div>
+
+      {/* Admin Panel for Course Management */}
+      {(user.role === 'Admin' || user.role === 'Instructor' || user.email === 'john.doe@hexaware.com') && (
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 mb-8 border border-purple-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-purple-900 mb-2">Course Management</h3>
+              <p className="text-purple-700">Create and manage courses, modules, and YouTube video content</p>
+            </div>
+            <button
+              onClick={() => setShowCourseManager(true)}
+              className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+            >
+              <Settings className="w-5 h-5" />
+              <span>Manage Courses</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Current Learning Path */}
       <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 mb-8">
