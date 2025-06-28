@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Clock, CheckCircle, XCircle, Award, RotateCcw, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Award, RotateCcw, ArrowRight, ArrowLeft, AlertCircle, Download, Share2 } from 'lucide-react';
 
 interface Question {
   id: number;
@@ -24,6 +24,23 @@ interface Assessment {
   badge: string;
 }
 
+interface AssessmentResult {
+  id: string;
+  assessmentId: string;
+  title: string;
+  score: number;
+  maxScore: number;
+  completedDate: string;
+  status: 'passed' | 'failed';
+  percentile: number;
+  badge: string | null;
+  timeSpent: string;
+  correctAnswers: number;
+  totalQuestions: number;
+  certificateId: string | null;
+  difficulty: string;
+}
+
 const AssessmentDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -33,6 +50,8 @@ const AssessmentDetail = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [assessmentStarted, setAssessmentStarted] = useState(false);
   const [assessment, setAssessment] = useState<Assessment | null>(null);
+  const [showCertificate, setShowCertificate] = useState(false);
+  const [assessmentResult, setAssessmentResult] = useState<AssessmentResult | null>(null);
 
   // Sample assessments data
   const assessments: Assessment[] = [
@@ -354,13 +373,128 @@ const AssessmentDetail = () => {
     return Math.round((correct / assessment.questions.length) * 100);
   };
 
+  const saveAssessmentResult = (score: number, passed: boolean) => {
+    const correctAnswers = selectedAnswers.filter((answer, index) => answer === assessment.questions[index].correctAnswer).length;
+    const timeSpent = formatTime((assessment.duration * 60) - timeLeft);
+    
+    const result: AssessmentResult = {
+      id: Date.now().toString(),
+      assessmentId: assessment.id,
+      title: assessment.title,
+      score,
+      maxScore: 100,
+      completedDate: new Date().toISOString(),
+      status: passed ? 'passed' : 'failed',
+      percentile: Math.floor(Math.random() * 30) + (passed ? 70 : 20), // Simulated percentile
+      badge: passed ? assessment.badge : null,
+      timeSpent,
+      correctAnswers,
+      totalQuestions: assessment.questions.length,
+      certificateId: passed ? `CERT-${assessment.id}-${Date.now()}` : null,
+      difficulty: assessment.level
+    };
+
+    setAssessmentResult(result);
+    
+    // In a real app, this would be saved to a database
+    console.log('Assessment result saved:', result);
+  };
+
+  const generateCertificate = () => {
+    if (!assessmentResult) return;
+    
+    setShowCertificate(true);
+  };
+
+  const downloadCertificate = () => {
+    // In a real app, this would generate and download a PDF certificate
+    alert('Certificate downloaded successfully!');
+  };
+
   const restartAssessment = () => {
     setCurrentQuestion(0);
     setSelectedAnswers([]);
     setShowResults(false);
     setTimeLeft(assessment.duration * 60);
     setAssessmentStarted(false);
+    setShowCertificate(false);
+    setAssessmentResult(null);
   };
+
+  if (showCertificate && assessmentResult) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+          {/* Certificate Header */}
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Award className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Certificate of Achievement</h1>
+            <p className="text-gray-600">This certifies that</p>
+          </div>
+
+          {/* Certificate Body */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8 mb-8 border-2 border-blue-200">
+            <div className="text-center">
+              <h2 className="text-4xl font-bold text-blue-900 mb-4">John Doe</h2>
+              <p className="text-lg text-gray-700 mb-6">has successfully completed the</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">{assessmentResult.title}</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-green-600">{assessmentResult.score}%</div>
+                  <div className="text-sm text-gray-600">Final Score</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-600">{assessmentResult.percentile}th</div>
+                  <div className="text-sm text-gray-600">Percentile</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-purple-600">{assessmentResult.badge}</div>
+                  <div className="text-sm text-gray-600">Badge Earned</div>
+                </div>
+              </div>
+
+              <div className="border-t border-blue-200 pt-6">
+                <div className="flex justify-between items-center text-sm text-gray-600">
+                  <div>
+                    <p>Certificate ID: <span className="font-mono">{assessmentResult.certificateId}</span></p>
+                    <p>Issued: {new Date(assessmentResult.completedDate).toLocaleDateString()}</p>
+                  </div>
+                  <div className="text-right">
+                    <p>Hexaware Learning Platform</p>
+                    <p>Digital Certificate</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Certificate Actions */}
+          <div className="flex justify-center space-x-4">
+            <button
+              onClick={downloadCertificate}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2"
+            >
+              <Download className="w-5 h-5" />
+              <span>Download Certificate</span>
+            </button>
+            <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center space-x-2">
+              <Share2 className="w-5 h-5" />
+              <span>Share on LinkedIn</span>
+            </button>
+            <button 
+              onClick={() => navigate('/profile')}
+              className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors font-medium"
+            >
+              View in Profile
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!assessmentStarted) {
     return (
@@ -404,6 +538,7 @@ const AssessmentDetail = () => {
                 <li>• You can navigate between questions freely</li>
                 <li>• Your progress is automatically saved</li>
                 <li>• You need {assessment.passingScore}% to pass and earn the "{assessment.badge}" badge</li>
+                <li>• Upon successful completion, you'll receive a digital certificate</li>
                 <li>• Make sure you have a stable internet connection</li>
               </ul>
             </div>
@@ -425,6 +560,11 @@ const AssessmentDetail = () => {
     const passed = score >= assessment.passingScore;
     const correctAnswers = selectedAnswers.filter((answer, index) => answer === assessment.questions[index].correctAnswer).length;
 
+    // Save the result when showing results for the first time
+    if (!assessmentResult) {
+      saveAssessmentResult(score, passed);
+    }
+
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
@@ -442,6 +582,9 @@ const AssessmentDetail = () => {
             <p className={`text-lg ${passed ? 'text-green-600' : 'text-red-600'}`}>
               {passed ? `Congratulations! You earned the "${assessment.badge}" badge!` : 'Keep studying and try again!'}
             </p>
+            {passed && (
+              <p className="text-gray-600 mt-2">Your certificate is ready for download</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -543,8 +686,12 @@ const AssessmentDetail = () => {
               Back to Assessments
             </button>
             {passed && (
-              <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium">
-                View Certificate
+              <button 
+                onClick={generateCertificate}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center space-x-2"
+              >
+                <Award className="w-5 h-5" />
+                <span>View Certificate</span>
               </button>
             )}
           </div>
