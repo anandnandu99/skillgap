@@ -10,6 +10,7 @@ import CourseDetail from './components/CourseDetail';
 import InteractiveQuiz from './components/InteractiveQuiz';
 import ProgressTracker from './components/ProgressTracker';
 import StudyGroups from './components/StudyGroups';
+import AssessmentDetail from './components/AssessmentDetail';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="/continue-learning" element={<ContinueLearning />} />
           <Route path="/explore-courses" element={<ExploreCourses />} />
           <Route path="/skill-assessment" element={<SkillAssessment />} />
+          <Route path="/assessment/:id" element={<AssessmentDetail />} />
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/course/:id" element={<CourseDetail courseId="1" />} />
           <Route path="/quiz/:id" element={<InteractiveQuiz />} />

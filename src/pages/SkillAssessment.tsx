@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Target, Clock, Award, TrendingUp, CheckCircle, AlertCircle, BookOpen, BarChart3 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Target, Clock, Award, TrendingUp, CheckCircle, AlertCircle, BookOpen, BarChart3, Play } from 'lucide-react';
 
 const SkillAssessment = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -24,7 +25,7 @@ const SkillAssessment = () => {
 
   const assessments = [
     {
-      id: 1,
+      id: '1',
       title: 'JavaScript Fundamentals Assessment',
       category: 'programming',
       level: 'beginner',
@@ -39,7 +40,7 @@ const SkillAssessment = () => {
       icon: '🟨'
     },
     {
-      id: 2,
+      id: '2',
       title: 'React Advanced Patterns',
       category: 'programming',
       level: 'advanced',
@@ -54,7 +55,7 @@ const SkillAssessment = () => {
       icon: '⚛️'
     },
     {
-      id: 3,
+      id: '3',
       title: 'Data Science Fundamentals',
       category: 'data-science',
       level: 'intermediate',
@@ -69,7 +70,7 @@ const SkillAssessment = () => {
       icon: '📊'
     },
     {
-      id: 4,
+      id: '4',
       title: 'AWS Cloud Practitioner',
       category: 'cloud',
       level: 'beginner',
@@ -84,7 +85,7 @@ const SkillAssessment = () => {
       icon: '☁️'
     },
     {
-      id: 5,
+      id: '5',
       title: 'Cybersecurity Risk Assessment',
       category: 'security',
       level: 'advanced',
@@ -99,7 +100,7 @@ const SkillAssessment = () => {
       icon: '🔒'
     },
     {
-      id: 6,
+      id: '6',
       title: 'UI/UX Design Principles',
       category: 'design',
       level: 'intermediate',
@@ -124,7 +125,10 @@ const SkillAssessment = () => {
       completedDate: '2024-01-18',
       status: 'passed',
       percentile: 78,
-      badge: 'JavaScript Foundation'
+      badge: 'JavaScript Foundation',
+      timeSpent: '25 min',
+      correctAnswers: 21,
+      totalQuestions: 25
     },
     {
       id: 2,
@@ -134,7 +138,10 @@ const SkillAssessment = () => {
       completedDate: '2024-01-15',
       status: 'passed',
       percentile: 65,
-      badge: 'Data Analyst'
+      badge: 'Data Analyst',
+      timeSpent: '42 min',
+      correctAnswers: 18,
+      totalQuestions: 25
     },
     {
       id: 3,
@@ -144,7 +151,23 @@ const SkillAssessment = () => {
       completedDate: '2024-01-12',
       status: 'failed',
       percentile: 32,
-      badge: null
+      badge: null,
+      timeSpent: '38 min',
+      correctAnswers: 11,
+      totalQuestions: 25
+    },
+    {
+      id: 4,
+      title: 'React Advanced Patterns',
+      score: 88,
+      maxScore: 100,
+      completedDate: '2024-01-10',
+      status: 'passed',
+      percentile: 82,
+      badge: 'React Expert',
+      timeSpent: '41 min',
+      correctAnswers: 31,
+      totalQuestions: 35
     }
   ];
 
@@ -155,7 +178,8 @@ const SkillAssessment = () => {
       requiredLevel: 4,
       gap: 2,
       priority: 'high',
-      recommendedCourses: 3
+      recommendedCourses: 3,
+      lastAssessed: '2024-01-15'
     },
     {
       skill: 'AWS Architecture',
@@ -163,15 +187,17 @@ const SkillAssessment = () => {
       requiredLevel: 4,
       gap: 1,
       priority: 'medium',
-      recommendedCourses: 2
+      recommendedCourses: 2,
+      lastAssessed: '2024-01-12'
     },
     {
       skill: 'React Performance',
-      currentLevel: 3,
+      currentLevel: 4,
       requiredLevel: 5,
-      gap: 2,
-      priority: 'high',
-      recommendedCourses: 4
+      gap: 1,
+      priority: 'medium',
+      recommendedCourses: 2,
+      lastAssessed: '2024-01-10'
     },
     {
       skill: 'Database Design',
@@ -179,7 +205,8 @@ const SkillAssessment = () => {
       requiredLevel: 4,
       gap: 0,
       priority: 'low',
-      recommendedCourses: 1
+      recommendedCourses: 1,
+      lastAssessed: '2024-01-08'
     }
   ];
 
@@ -250,13 +277,18 @@ const SkillAssessment = () => {
             <div key={index} className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-medium text-gray-900">{skill.skill}</h3>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  skill.priority === 'high' ? 'bg-red-100 text-red-800' :
-                  skill.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-green-100 text-green-800'
-                }`}>
-                  {skill.priority} priority
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    skill.priority === 'high' ? 'bg-red-100 text-red-800' :
+                    skill.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {skill.priority} priority
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    Last assessed: {new Date(skill.lastAssessed).toLocaleDateString()}
+                  </span>
+                </div>
               </div>
               
               <div className="flex items-center space-x-4 mb-3">
@@ -287,16 +319,20 @@ const SkillAssessment = () => {
                 </div>
               </div>
 
-              {skill.gap > 0 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">
+              <div className="flex items-center justify-between">
+                {skill.gap > 0 ? (
+                  <span className="text-sm text-red-600 font-medium">
                     Gap: {skill.gap} level{skill.gap > 1 ? 's' : ''}
                   </span>
-                  <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                    {skill.recommendedCourses} recommended courses →
-                  </button>
-                </div>
-              )}
+                ) : (
+                  <span className="text-sm text-green-600 font-medium">
+                    ✓ Skill requirement met
+                  </span>
+                )}
+                <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                  {skill.recommendedCourses} recommended courses →
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -392,9 +428,13 @@ const SkillAssessment = () => {
                 </span>
               </div>
 
-              <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                Start Assessment
-              </button>
+              <Link 
+                to={`/assessment/${assessment.id}`}
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center space-x-2"
+              >
+                <Play className="w-4 h-4" />
+                <span>Start Assessment</span>
+              </Link>
             </div>
           ))}
         </div>
@@ -411,6 +451,7 @@ const SkillAssessment = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assessment</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Percentile</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Badge</th>
@@ -422,13 +463,15 @@ const SkillAssessment = () => {
                   <tr key={result.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{result.title}</div>
+                      <div className="text-xs text-gray-500">
+                        {result.correctAnswers}/{result.totalQuestions} correct
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        <span className={`font-bold ${result.score >= 70 ? 'text-green-600' : 'text-red-600'}`}>
-                          {result.score}
+                        <span className={`text-lg font-bold ${result.score >= 70 ? 'text-green-600' : 'text-red-600'}`}>
+                          {result.score}%
                         </span>
-                        <span className="text-gray-600">/{result.maxScore}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -444,6 +487,9 @@ const SkillAssessment = () => {
                           {result.status.charAt(0).toUpperCase() + result.status.slice(1)}
                         </span>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {result.timeSpent}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {result.percentile}th percentile
