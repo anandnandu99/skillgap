@@ -344,9 +344,9 @@ class CourseStorage {
                   id: 'lesson-1-2',
                   title: 'Advanced ML Landscape',
                   type: 'video',
-                  duration: '25 min',
+                  duration: '19 min',
                   content: 'Explore the current state of machine learning and emerging trends.',
-                  videoUrl: 'https://www.youtube.com/watch?v=IpGxLWOIZy4',
+                  videoUrl: 'https://www.youtube.com/watch?v=Mph0cWZsoV4',
                   completed: false
                 }
               ]
