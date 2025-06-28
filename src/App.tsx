@@ -15,7 +15,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // Set to false for testing auth flow
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Set to false for testing auth flow
   const [user, setUser] = useState({
     name: 'John Doe',
     email: 'john.doe@hexaware.com',
