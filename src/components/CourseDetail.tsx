@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Play, Clock, Users, Star, BookOpen, CheckCircle, Lock, Download, MessageCircle, Share2, Award, ArrowLeft, ArrowRight, FileText, Video, Code, Pizza as Quiz } from 'lucide-react';
+import { Play, Clock, Users, Star, BookOpen, CheckCircle, Lock, Download, MessageCircle, Share2, Award, ArrowLeft, ArrowRight, FileText, Video, Code, Pizza as Quiz, X } from 'lucide-react';
 import { courseStorage, Course, CourseEnrollment, Lesson } from '../utils/courseStorage';
 import { User, userStorage } from '../utils/userStorage';
+import { emailService } from '../utils/emailService';
 
 interface CourseDetailProps {
   user: User;
@@ -44,13 +45,16 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ user }) => {
         data: { courseId: course.id }
       };
       userStorage.saveActivity(activity);
+
+      // Send enrollment email
+      emailService.sendCourseEnrollmentEmail(user, course);
     }
   };
 
   const handleLessonClick = (lesson: Lesson) => {
     if (enrollment) {
       setCurrentLesson(lesson);
-      if (lesson.type === 'video') {
+      if (lesson.type === 'video' && lesson.videoUrl) {
         setShowVideoPlayer(true);
       }
     }
@@ -75,7 +79,65 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ user }) => {
         timeSpent: 0
       };
       courseStorage.saveLessonProgress(progress);
+
+      // Check if course is completed
+      if (updatedEnrollment && updatedEnrollment.progress === 100) {
+        handleCourseCompletion(updatedEnrollment);
+      }
     }
+  };
+
+  const handleCourseCompletion = (completedEnrollment: CourseEnrollment) => {
+    if (!course) return;
+
+    // Mark certificate as earned
+    courseStorage.markCertificateEarned(user.id, course.id);
+
+    // Generate certificate
+    const certificate = {
+      id: `CERT-${course.id}-${Date.now()}`,
+      userId: user.id,
+      courseId: course.id,
+      title: course.title,
+      badge: `${course.title} Completion Certificate`,
+      score: 100,
+      completedDate: new Date().toISOString(),
+      certificateId: `CERT-${course.id}-${Date.now()}`
+    };
+
+    // Save certificate
+    userStorage.saveCertificate(certificate);
+
+    // Save completion activity
+    const activity = {
+      id: Date.now().toString(),
+      userId: user.id,
+      type: 'course_completed' as const,
+      title: `Completed ${course.title}`,
+      timestamp: new Date().toISOString(),
+      data: { 
+        courseId: course.id,
+        certificateId: certificate.id,
+        progress: 100
+      }
+    };
+    userStorage.saveActivity(activity);
+
+    // Send completion email with certificate
+    emailService.sendCourseCompletionEmail(user, course, certificate);
+
+    // Show completion modal
+    alert(`Congratulations! You've completed ${course.title}. Your certificate has been generated and emailed to you!`);
+  };
+
+  const getYouTubeVideoId = (url: string): string | null => {
+    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+  };
+
+  const getYouTubeEmbedUrl = (videoId: string): string => {
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
   };
 
   const getLessonIcon = (type: string) => {
@@ -229,7 +291,11 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ user }) => {
             />
             <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center rounded-lg">
               <button 
-                onClick={() => enrollment && setShowVideoPlayer(true)}
+                onClick={() => {
+                  if (enrollment && course.syllabus[0]?.lessons[0]) {
+                    handleLessonClick(course.syllabus[0].lessons[0]);
+                  }
+                }}
                 className={`bg-white bg-opacity-90 rounded-full p-4 hover:bg-opacity-100 transition-all ${
                   !enrollment ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
@@ -493,7 +559,7 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ user }) => {
                 {enrollment.progress === 100 && (
                   <button className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2">
                     <Award className="w-4 h-4" />
-                    <span>Get Certificate</span>
+                    <span>View Certificate</span>
                   </button>
                 )}
               </div>
@@ -560,7 +626,7 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* Video Player Modal */}
+      {/* YouTube Video Player Modal */}
       {showVideoPlayer && currentLesson && (
         <>
           <div 
@@ -573,29 +639,47 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ user }) => {
                 <h2 className="text-lg font-semibold">{currentLesson.title}</h2>
                 <button
                   onClick={() => setShowVideoPlayer(false)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100"
                 >
-                  ×
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-              <div className="flex-1 bg-black flex items-center justify-center">
-                <div className="text-white text-center">
-                  <Play className="w-16 h-16 mx-auto mb-4" />
-                  <p>Video Player Placeholder</p>
-                  <p className="text-sm opacity-75">Duration: {currentLesson.duration}</p>
-                </div>
+              <div className="flex-1 bg-black">
+                {currentLesson.videoUrl && getYouTubeVideoId(currentLesson.videoUrl) ? (
+                  <iframe
+                    src={getYouTubeEmbedUrl(getYouTubeVideoId(currentLesson.videoUrl)!)}
+                    className="w-full h-full"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={currentLesson.title}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-white">
+                    <div className="text-center">
+                      <Play className="w-16 h-16 mx-auto mb-4" />
+                      <p>Video content for: {currentLesson.title}</p>
+                      <p className="text-sm opacity-75">Duration: {currentLesson.duration}</p>
+                      <p className="text-xs opacity-50 mt-2">YouTube video would be embedded here</p>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="p-4 border-t">
+              <div className="p-4 border-t bg-gray-50">
                 <div className="flex justify-between items-center">
                   <div>
                     <h3 className="font-medium">{currentLesson.title}</h3>
                     <p className="text-sm text-gray-600">{currentLesson.content}</p>
                   </div>
                   <button
-                    onClick={() => markLessonComplete(currentLesson.id)}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                    onClick={() => {
+                      markLessonComplete(currentLesson.id);
+                      setShowVideoPlayer(false);
+                    }}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
                   >
-                    Mark Complete
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Mark Complete</span>
                   </button>
                 </div>
               </div>

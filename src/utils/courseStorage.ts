@@ -200,6 +200,16 @@ class CourseStorage {
     }
   }
 
+  markCertificateEarned(userId: string, courseId: string): void {
+    const enrollments = this.getAllEnrollments();
+    const enrollment = enrollments.find(e => e.userId === userId && e.courseId === courseId);
+    
+    if (enrollment) {
+      enrollment.certificateEarned = true;
+      localStorage.setItem(this.ENROLLMENTS_KEY, JSON.stringify(enrollments));
+    }
+  }
+
   // Lesson Progress
   saveLessonProgress(progress: LessonProgress): void {
     const allProgress = this.getAllLessonProgress();
@@ -318,7 +328,7 @@ class CourseStorage {
                   type: 'video',
                   duration: '15 min',
                   content: 'Welcome to Advanced Machine Learning! In this lesson, we\'ll cover what you\'ll learn and set up your development environment.',
-                  videoUrl: 'https://example.com/video1',
+                  videoUrl: 'https://www.youtube.com/watch?v=aircAruvnKk',
                   completed: false,
                   resources: [
                     {
@@ -336,7 +346,7 @@ class CourseStorage {
                   type: 'video',
                   duration: '25 min',
                   content: 'Explore the current state of machine learning and emerging trends.',
-                  videoUrl: 'https://example.com/video2',
+                  videoUrl: 'https://www.youtube.com/watch?v=IpGxLWOIZy4',
                   completed: false
                 }
               ]
@@ -352,15 +362,16 @@ class CourseStorage {
                   type: 'video',
                   duration: '30 min',
                   content: 'Deep dive into neural network architectures and design principles.',
-                  videoUrl: 'https://example.com/video3',
+                  videoUrl: 'https://www.youtube.com/watch?v=bfmFfD2RIcg',
                   completed: false
                 },
                 {
                   id: 'lesson-2-2',
                   title: 'Backpropagation Algorithm',
-                  type: 'interactive',
+                  type: 'video',
                   duration: '35 min',
-                  content: 'Interactive exploration of the backpropagation algorithm.',
+                  content: 'Understanding how neural networks learn through backpropagation.',
+                  videoUrl: 'https://www.youtube.com/watch?v=Ilg3gGewQ5U',
                   completed: false
                 }
               ],
@@ -429,15 +440,41 @@ class CourseStorage {
                   type: 'video',
                   duration: '20 min',
                   content: 'Introduction to React Native and its advantages for mobile development.',
-                  videoUrl: 'https://example.com/rn-video1',
+                  videoUrl: 'https://www.youtube.com/watch?v=0-S5a0eXPoc',
                   completed: false
                 },
                 {
                   id: 'lesson-1-2',
                   title: 'Development Environment Setup',
-                  type: 'reading',
+                  type: 'video',
                   duration: '30 min',
                   content: 'Step-by-step guide to setting up your React Native development environment.',
+                  videoUrl: 'https://www.youtube.com/watch?v=VozPNrt-LfE',
+                  completed: false
+                }
+              ]
+            },
+            {
+              id: 'module-2',
+              title: 'Building Your First App',
+              description: 'Create your first React Native application',
+              lessons: [
+                {
+                  id: 'lesson-2-1',
+                  title: 'Creating Components',
+                  type: 'video',
+                  duration: '25 min',
+                  content: 'Learn how to create and style React Native components.',
+                  videoUrl: 'https://www.youtube.com/watch?v=ur6I5m2nTvk',
+                  completed: false
+                },
+                {
+                  id: 'lesson-2-2',
+                  title: 'Navigation Basics',
+                  type: 'video',
+                  duration: '35 min',
+                  content: 'Implement navigation between screens in your app.',
+                  videoUrl: 'https://www.youtube.com/watch?v=nQVCkqvU1uE',
                   completed: false
                 }
               ]
@@ -486,7 +523,41 @@ class CourseStorage {
                   type: 'video',
                   duration: '45 min',
                   content: 'Core React concepts including components, props, and state.',
-                  videoUrl: 'https://example.com/react-video1',
+                  videoUrl: 'https://www.youtube.com/watch?v=Tn6-PIqc4UM',
+                  completed: false
+                },
+                {
+                  id: 'lesson-1-2',
+                  title: 'React Hooks Deep Dive',
+                  type: 'video',
+                  duration: '40 min',
+                  content: 'Master React hooks for state management and side effects.',
+                  videoUrl: 'https://www.youtube.com/watch?v=TNhaISOUy6Q',
+                  completed: false
+                }
+              ]
+            },
+            {
+              id: 'module-2',
+              title: 'Backend Development with Node.js',
+              description: 'Building robust server-side applications',
+              lessons: [
+                {
+                  id: 'lesson-2-1',
+                  title: 'Node.js and Express Setup',
+                  type: 'video',
+                  duration: '35 min',
+                  content: 'Setting up a Node.js server with Express framework.',
+                  videoUrl: 'https://www.youtube.com/watch?v=pKd0Rpw7O48',
+                  completed: false
+                },
+                {
+                  id: 'lesson-2-2',
+                  title: 'RESTful API Development',
+                  type: 'video',
+                  duration: '50 min',
+                  content: 'Creating RESTful APIs with proper routing and middleware.',
+                  videoUrl: 'https://www.youtube.com/watch?v=l8WPWK9mS5M',
                   completed: false
                 }
               ]

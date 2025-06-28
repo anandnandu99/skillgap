@@ -1,7 +1,7 @@
 export interface EmailNotification {
   id: string;
   userId: string;
-  type: 'registration' | 'assessment_completion' | 'certificate_earned';
+  type: 'registration' | 'assessment_completion' | 'certificate_earned' | 'course_enrollment' | 'course_completion';
   subject: string;
   content: string;
   timestamp: string;
@@ -25,6 +25,38 @@ class EmailService {
 
     this.saveNotification(notification);
     this.showBrowserNotification('Welcome to Hexaware Learning!', 'Your account has been created successfully.');
+  }
+
+  // Send course enrollment email
+  sendCourseEnrollmentEmail(user: any, course: any): void {
+    const notification: EmailNotification = {
+      id: this.generateId(),
+      userId: user.id,
+      type: 'course_enrollment',
+      subject: `🎓 Successfully Enrolled: ${course.title}`,
+      content: this.generateCourseEnrollmentEmailContent(user, course),
+      timestamp: new Date().toISOString(),
+      read: false
+    };
+
+    this.saveNotification(notification);
+    this.showBrowserNotification('Course Enrollment Successful!', `You've enrolled in ${course.title}`);
+  }
+
+  // Send course completion email with certificate
+  sendCourseCompletionEmail(user: any, course: any, certificate: any): void {
+    const notification: EmailNotification = {
+      id: this.generateId(),
+      userId: user.id,
+      type: 'course_completion',
+      subject: `🎉 Course Completed: ${course.title} - Certificate Ready!`,
+      content: this.generateCourseCompletionEmailContent(user, course, certificate),
+      timestamp: new Date().toISOString(),
+      read: false
+    };
+
+    this.saveNotification(notification);
+    this.showBrowserNotification('Course Completed!', `Congratulations! You've completed ${course.title} and earned a certificate!`);
   }
 
   // Send assessment completion email
@@ -139,6 +171,132 @@ class EmailService {
           
           <p style="color: #999; font-size: 14px; text-align: center; margin: 30px 0 0 0;">
             Happy learning!<br>
+            The Hexaware Learning Team
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  private generateCourseEnrollmentEmailContent(user: any, course: any): string {
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #10b981, #059669); border-radius: 12px; overflow: hidden;">
+        <div style="padding: 40px 30px; text-align: center; color: white;">
+          <h1 style="margin: 0 0 20px 0; font-size: 28px; font-weight: bold;">Course Enrollment Successful! 🎓</h1>
+          <p style="margin: 0; font-size: 18px; opacity: 0.9;">${course.title}</p>
+        </div>
+        
+        <div style="background: white; padding: 40px 30px;">
+          <h2 style="color: #333; margin: 0 0 20px 0;">Hello ${user.name}!</h2>
+          
+          <p style="color: #666; line-height: 1.6; margin: 0 0 20px 0;">
+            Congratulations! You've successfully enrolled in <strong>${course.title}</strong>. Your learning journey begins now!
+          </p>
+          
+          <div style="background: #f0fdf4; border: 2px solid #10b981; border-radius: 12px; padding: 30px; margin: 30px 0; text-align: center;">
+            <h3 style="color: #065f46; margin: 0 0 15px 0; font-size: 24px;">${course.title}</h3>
+            <p style="color: #065f46; margin: 0; font-size: 16px;">by ${course.instructor}</p>
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #10b981;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; text-align: center;">
+                <div>
+                  <div style="font-size: 18px; font-weight: bold; color: #065f46;">${course.duration}</div>
+                  <div style="color: #065f46; font-size: 12px;">Duration</div>
+                </div>
+                <div>
+                  <div style="font-size: 18px; font-weight: bold; color: #065f46;">${course.totalLessons}</div>
+                  <div style="color: #065f46; font-size: 12px;">Lessons</div>
+                </div>
+                <div>
+                  <div style="font-size: 18px; font-weight: bold; color: #065f46;">${course.level}</div>
+                  <div style="color: #065f46; font-size: 12px;">Level</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <h3 style="color: #333; margin: 30px 0 15px 0;">What You'll Learn:</h3>
+          <ul style="color: #666; line-height: 1.8; padding-left: 20px;">
+            ${course.learningObjectives.slice(0, 3).map((obj: string) => `<li>${obj}</li>`).join('')}
+          </ul>
+          
+          <h3 style="color: #333; margin: 30px 0 15px 0;">Getting Started:</h3>
+          <ul style="color: #666; line-height: 1.8; padding-left: 20px;">
+            <li>Access your course materials anytime from your dashboard</li>
+            <li>Watch video lessons at your own pace</li>
+            <li>Complete hands-on exercises and projects</li>
+            <li>Track your progress and earn a certificate upon completion</li>
+          </ul>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="#" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              Start Learning Now →
+            </a>
+          </div>
+          
+          <p style="color: #999; font-size: 14px; text-align: center; margin: 30px 0 0 0;">
+            Happy learning!<br>
+            The Hexaware Learning Team
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  private generateCourseCompletionEmailContent(user: any, course: any, certificate: any): string {
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-radius: 12px; overflow: hidden;">
+        <div style="padding: 40px 30px; text-align: center; color: white;">
+          <h1 style="margin: 0 0 20px 0; font-size: 28px; font-weight: bold;">Course Completed! 🎉</h1>
+          <p style="margin: 0; font-size: 18px; opacity: 0.9;">Certificate Ready for Download</p>
+        </div>
+        
+        <div style="background: white; padding: 40px 30px;">
+          <h2 style="color: #333; margin: 0 0 20px 0;">Congratulations ${user.name}!</h2>
+          
+          <p style="color: #666; line-height: 1.6; margin: 0 0 20px 0;">
+            You've successfully completed <strong>${course.title}</strong>! This is a significant achievement that demonstrates your dedication to learning and professional growth.
+          </p>
+          
+          <div style="background: #fffbeb; border: 2px solid #fbbf24; border-radius: 12px; padding: 30px; margin: 30px 0; text-align: center;">
+            <div style="font-size: 48px; margin-bottom: 15px;">🏆</div>
+            <h3 style="color: #92400e; margin: 0 0 10px 0; font-size: 24px;">${certificate.badge}</h3>
+            <p style="color: #92400e; margin: 0; font-size: 16px;">Certificate of Completion</p>
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #fbbf24;">
+              <p style="margin: 5px 0; color: #92400e;"><strong>Course:</strong> ${course.title}</p>
+              <p style="margin: 5px 0; color: #92400e;"><strong>Instructor:</strong> ${course.instructor}</p>
+              <p style="margin: 5px 0; color: #92400e;"><strong>Certificate ID:</strong> ${certificate.certificateId}</p>
+              <p style="margin: 5px 0; color: #92400e;"><strong>Completion Date:</strong> ${new Date(certificate.completedDate).toLocaleDateString()}</p>
+            </div>
+          </div>
+          
+          <h3 style="color: #333; margin: 30px 0 15px 0;">What You've Accomplished:</h3>
+          <ul style="color: #666; line-height: 1.8; padding-left: 20px;">
+            <li>Completed all ${course.totalLessons} lessons in the course</li>
+            <li>Mastered key concepts in ${course.category}</li>
+            <li>Gained practical skills applicable to your role</li>
+            <li>Earned a verified certificate of completion</li>
+          </ul>
+          
+          <h3 style="color: #333; margin: 30px 0 15px 0;">Next Steps:</h3>
+          <ul style="color: #666; line-height: 1.8; padding-left: 20px;">
+            <li>Download your certificate from your profile</li>
+            <li>Add this achievement to your LinkedIn profile</li>
+            <li>Share your success with colleagues and friends</li>
+            <li>Explore advanced courses to continue learning</li>
+            <li>Apply your new skills in real-world projects</li>
+          </ul>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="#" style="background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; margin-right: 10px;">
+              Download Certificate
+            </a>
+            <a href="#" style="background: #1d4ed8; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              Continue Learning
+            </a>
+          </div>
+          
+          <p style="color: #999; font-size: 14px; text-align: center; margin: 30px 0 0 0;">
+            Congratulations on this achievement!<br>
             The Hexaware Learning Team
           </p>
         </div>
