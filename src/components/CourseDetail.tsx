@@ -137,7 +137,7 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ user }) => {
   };
 
   const getYouTubeEmbedUrl = (videoId: string): string => {
-    return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
   };
 
   const getLessonIcon = (type: string) => {
@@ -650,7 +650,7 @@ const CourseDetail: React.FC<CourseDetailProps> = ({ user }) => {
                     src={getYouTubeEmbedUrl(getYouTubeVideoId(currentLesson.videoUrl)!)}
                     className="w-full h-full"
                     frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                     title={currentLesson.title}
                   />

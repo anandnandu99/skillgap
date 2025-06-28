@@ -440,7 +440,7 @@ class CourseStorage {
                   type: 'video',
                   duration: '20 min',
                   content: 'Introduction to React Native and its advantages for mobile development.',
-                  videoUrl: 'React Native Overview',
+                  videoUrl: 'https://www.youtube.com/watch?v=0-S5a0eXPoc',
                   completed: false
                 },
                 {
