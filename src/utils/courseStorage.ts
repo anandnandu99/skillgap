@@ -362,7 +362,7 @@ class CourseStorage {
                   type: 'video',
                   duration: '30 min',
                   content: 'Deep dive into neural network architectures and design principles.',
-                  videoUrl: 'https://www.youtube.com/watch?v=bfmFfD2RIcg',
+                  videoUrl: 'https://www.youtube.com/watch?v=I2PaZIweWMs',
                   completed: false
                 },
                 {
