@@ -5,6 +5,11 @@ import HomePage from './pages/HomePage';
 import ContinueLearning from './pages/ContinueLearning';
 import ExploreCourses from './pages/ExploreCourses';
 import SkillAssessment from './pages/SkillAssessment';
+import UserProfile from './components/UserProfile';
+import CourseDetail from './components/CourseDetail';
+import InteractiveQuiz from './components/InteractiveQuiz';
+import ProgressTracker from './components/ProgressTracker';
+import StudyGroups from './components/StudyGroups';
 
 function App() {
   return (
@@ -16,6 +21,11 @@ function App() {
           <Route path="/continue-learning" element={<ContinueLearning />} />
           <Route path="/explore-courses" element={<ExploreCourses />} />
           <Route path="/skill-assessment" element={<SkillAssessment />} />
+          <Route path="/profile" element={<UserProfile />} />
+          <Route path="/course/:id" element={<CourseDetail courseId="1" />} />
+          <Route path="/quiz/:id" element={<InteractiveQuiz />} />
+          <Route path="/progress" element={<ProgressTracker />} />
+          <Route path="/study-groups" element={<StudyGroups />} />
         </Routes>
       </div>
     </Router>

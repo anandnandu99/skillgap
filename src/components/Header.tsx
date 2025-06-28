@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { GraduationCap, User, Bell } from 'lucide-react';
+import { GraduationCap, User, Bell, BarChart3, Users } from 'lucide-react';
+import NotificationCenter from './NotificationCenter';
 
 const Header = () => {
   const location = useLocation();
@@ -60,19 +61,40 @@ const Header = () => {
               >
                 Skill Assessment
               </Link>
+              <Link
+                to="/progress"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive('/progress') 
+                    ? 'text-blue-600 bg-blue-50' 
+                    : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                }`}
+              >
+                Progress
+              </Link>
+              <Link
+                to="/study-groups"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive('/study-groups') 
+                    ? 'text-blue-600 bg-blue-50' 
+                    : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                }`}
+              >
+                Study Groups
+              </Link>
             </nav>
           </div>
 
           <div className="flex items-center space-x-4">
-            <button className="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-50 rounded-full transition-colors">
-              <Bell className="w-5 h-5" />
-            </button>
-            <div className="flex items-center space-x-2">
+            <NotificationCenter />
+            <Link 
+              to="/profile"
+              className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg p-2 transition-colors"
+            >
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                 <User className="w-4 h-4 text-white" />
               </div>
               <span className="text-sm font-medium text-gray-700">John Doe</span>
-            </div>
+            </Link>
           </div>
         </div>
       </div>
