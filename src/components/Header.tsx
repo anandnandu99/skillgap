@@ -1,10 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { GraduationCap, User, Bell, BarChart3, Users } from 'lucide-react';
+import { GraduationCap, User, Bell, BarChart3, Users, LogOut, Settings } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 
-const Header = () => {
+interface HeaderProps {
+  user: {
+    name: string;
+    email: string;
+    role: string;
+  };
+  onLogout: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
   const location = useLocation();
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -86,15 +96,74 @@ const Header = () => {
 
           <div className="flex items-center space-x-4">
             <NotificationCenter />
-            <Link 
-              to="/profile"
-              className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg p-2 transition-colors"
-            >
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-sm font-medium text-gray-700">John Doe</span>
-            </Link>
+            
+            {/* User Menu */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg p-2 transition-colors"
+              >
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
+                </div>
+                <div className="hidden md:block text-left">
+                  <div className="text-sm font-medium text-gray-700">{user.name}</div>
+                  <div className="text-xs text-gray-500">{user.role}</div>
+                </div>
+              </button>
+
+              {/* User Dropdown Menu */}
+              {showUserMenu && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowUserMenu(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                    <div className="p-3 border-b border-gray-200">
+                      <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                      <div className="text-xs text-gray-500">{user.email}</div>
+                    </div>
+                    <div className="py-1">
+                      <Link
+                        to="/profile"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <User className="w-4 h-4 mr-2" />
+                        View Profile
+                      </Link>
+                      <Link
+                        to="/progress"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <BarChart3 className="w-4 h-4 mr-2" />
+                        Learning Progress
+                      </Link>
+                      <button
+                        className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        Settings
+                      </button>
+                    </div>
+                    <div className="border-t border-gray-200 py-1">
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          onLogout();
+                        }}
+                        className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -1,17 +1,25 @@
 import React, { useState } from 'react';
 import { User, Edit3, Camera, Award, BookOpen, Target, TrendingUp, Calendar, Mail, Phone, MapPin, Briefcase, Download, Eye, Star } from 'lucide-react';
 
-const UserProfile = () => {
+interface UserProfileProps {
+  user: {
+    name: string;
+    email: string;
+    role: string;
+  };
+}
+
+const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   
   const [profileData, setProfileData] = useState({
-    name: 'John Doe',
-    email: 'john.doe@hexaware.com',
+    name: user.name || 'John Doe',
+    email: user.email || 'john.doe@hexaware.com',
     phone: '+1 (555) 123-4567',
     location: 'New York, NY',
     department: 'Software Engineering',
-    role: 'Senior Developer',
+    role: user.role || 'Senior Developer',
     joinDate: '2022-03-15',
     bio: 'Passionate full-stack developer with 5+ years of experience in React, Node.js, and cloud technologies. Always eager to learn new technologies and share knowledge with the team.',
     skills: ['JavaScript', 'React', 'Node.js', 'Python', 'AWS', 'Docker', 'MongoDB'],
@@ -45,7 +53,7 @@ const UserProfile = () => {
       score: 85,
       maxScore: 100,
       completedDate: '2024-01-18',
-      status: 'passed',
+      status: 'passed' as const,
       percentile: 78,
       badge: 'JavaScript Foundation',
       timeSpent: '25 min',
@@ -60,7 +68,7 @@ const UserProfile = () => {
       score: 88,
       maxScore: 100,
       completedDate: '2024-01-10',
-      status: 'passed',
+      status: 'passed' as const,
       percentile: 82,
       badge: 'React Expert',
       timeSpent: '41 min',
@@ -75,7 +83,7 @@ const UserProfile = () => {
       score: 72,
       maxScore: 100,
       completedDate: '2024-01-15',
-      status: 'passed',
+      status: 'passed' as const,
       percentile: 65,
       badge: 'Data Analyst',
       timeSpent: '42 min',
@@ -90,7 +98,7 @@ const UserProfile = () => {
       score: 45,
       maxScore: 100,
       completedDate: '2024-01-12',
-      status: 'failed',
+      status: 'failed' as const,
       percentile: 32,
       badge: null,
       timeSpent: '38 min',
@@ -218,7 +226,7 @@ const UserProfile = () => {
               <p className="text-3xl font-bold">{learningStats.totalHours}h</p>
               <p className="text-orange-100 text-sm">Total time invested</p>
             </div>
-            <Clock className="w-10 h-10 text-orange-200" />
+            <BookOpen className="w-10 h-10 text-orange-200" />
           </div>
         </div>
       </div>
