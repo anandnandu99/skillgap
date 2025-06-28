@@ -1,14 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { GraduationCap, User, Bell, BarChart3, Users, LogOut, Settings } from 'lucide-react';
-import NotificationCenter from './NotificationCenter';
+import EmailNotificationCenter from './EmailNotificationCenter';
+import { User as UserType } from '../utils/userStorage';
 
 interface HeaderProps {
-  user: {
-    name: string;
-    email: string;
-    role: string;
-  };
+  user: UserType;
   onLogout: () => void;
 }
 
@@ -95,7 +92,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <NotificationCenter />
+            <EmailNotificationCenter user={user} />
             
             {/* User Menu */}
             <div className="relative">
