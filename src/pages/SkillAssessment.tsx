@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Target, Clock, Award, TrendingUp, CheckCircle, AlertCircle, BookOpen, BarChart3, Play } from 'lucide-react';
 import { User, userStorage } from '../utils/userStorage';
 
-interface Skill AssessmentProps {
+interface SkillAssessmentProps {
   user: User;
 }
 
