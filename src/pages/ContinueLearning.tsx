@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { PlayCircle, Clock, CheckCircle, BookOpen, Award, Progress, Calendar, Target } from 'lucide-react';
+import { PlayCircle, Clock, CheckCircle, BookOpen, Award, Cross as Progress, Calendar, Target } from 'lucide-react';
 import { User, userStorage } from '../utils/userStorage';
 import { courseStorage, CourseEnrollment, Course } from '../utils/courseStorage';
 

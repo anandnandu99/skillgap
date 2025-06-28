@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Play, Clock, Users, Star, BookOpen, CheckCircle, Lock, Download, MessageCircle, Share2, Award, ArrowLeft, ArrowRight, FileText, Video, Code, Quiz } from 'lucide-react';
+import { Play, Clock, Users, Star, BookOpen, CheckCircle, Lock, Download, MessageCircle, Share2, Award, ArrowLeft, ArrowRight, FileText, Video, Code, Pizza as Quiz } from 'lucide-react';
 import { courseStorage, Course, CourseEnrollment, Lesson } from '../utils/courseStorage';
 import { User, userStorage } from '../utils/userStorage';
 
