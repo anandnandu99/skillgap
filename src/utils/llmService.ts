@@ -21,8 +21,8 @@ interface QuestionGenerationRequest {
 }
 
 class LLMService {
-  private readonly API_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
-  private readonly MODEL = 'gpt-3.5-turbo';
+  private readonly API_ENDPOINT = 'https://hexavarsity-secureapi.azurewebsites.net/api/azureai';
+  private readonly MODEL = 'gpt-4-mini';
   private readonly API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
   // Generate questions using OpenAI API
