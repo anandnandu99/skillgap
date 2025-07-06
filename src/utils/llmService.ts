@@ -41,7 +41,7 @@ class LLMService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.API_KEY}`
+          'x-api-key': this.API_KEY,
         },
         body: JSON.stringify({
           model: this.MODEL,
