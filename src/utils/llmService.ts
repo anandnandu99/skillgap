@@ -22,28 +22,141 @@ interface QuestionGenerationRequest {
 
 class LLMService {
   private readonly API_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
-  private readonly MODEL = 'gpt-4';
+  private readonly MODEL = 'gpt-3.5-turbo';
+  private readonly API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
-  // Generate questions using LLM (simulated for demo)
+  // Generate questions using OpenAI API
   async generateQuestions(request: QuestionGenerationRequest): Promise<LLMQuestion[]> {
     try {
-      // Show loading state
       console.log(`Generating ${request.questionCount} questions for ${request.topic}...`);
       
-      // Simulate API delay for realistic experience
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (!this.API_KEY) {
+        console.warn('OpenAI API key not found, falling back to sample questions');
+        return this.generateFallbackQuestions(request);
+      }
+
+      const prompt = this.createPrompt(request);
       
-      // Generate personalized questions based on user context
-      return this.generatePersonalizedQuestions(request);
+      const response = await fetch(this.API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.API_KEY}`
+        },
+        body: JSON.stringify({
+          model: this.MODEL,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert assessment creator. Generate high-quality multiple-choice questions with detailed explanations. Always respond with valid JSON format.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.8,
+          max_tokens: 2000
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content;
+      
+      if (!content) {
+        throw new Error('No content received from OpenAI API');
+      }
+
+      // Parse the JSON response
+      const parsedQuestions = this.parseOpenAIResponse(content, request);
+      return parsedQuestions;
+
     } catch (error) {
-      console.error('Error generating questions:', error);
-      throw new Error('Failed to generate questions. Please try again.');
+      console.error('Error generating questions with OpenAI:', error);
+      console.log('Falling back to sample questions...');
+      return this.generateFallbackQuestions(request);
     }
   }
 
-  private generatePersonalizedQuestions(request: QuestionGenerationRequest): LLMQuestion[] {
-    const questionBank = this.getQuestionBank();
-    const topicQuestions = questionBank[request.topic] || questionBank['JavaScript Fundamentals'];
+  private createPrompt(request: QuestionGenerationRequest): string {
+    const contextInfo = request.userRole && request.userDepartment 
+      ? `The user is a ${request.userRole} working in ${request.userDepartment}.`
+      : '';
+
+    return `
+Generate ${request.questionCount} multiple-choice questions for a ${request.difficulty} level assessment on "${request.topic}" in the ${request.category} category.
+
+${contextInfo}
+
+Requirements:
+- Each question should have exactly 4 options
+- Questions should be practical and relevant to real-world scenarios
+- Include detailed explanations for the correct answers
+- Vary the difficulty within the ${request.difficulty} level
+- Make questions specific to ${request.topic}
+- Ensure questions test understanding, not just memorization
+
+Please respond with a JSON array in this exact format:
+[
+  {
+    "question": "Question text here?",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correctAnswer": 0,
+    "explanation": "Detailed explanation of why this answer is correct and others are wrong.",
+    "difficulty": "${this.mapDifficultyLevel(request.difficulty)}",
+    "category": "${request.category}",
+    "topic": "${request.topic}"
+  }
+]
+
+Generate exactly ${request.questionCount} questions. Ensure the JSON is valid and properly formatted.
+    `;
+  }
+
+  private parseOpenAIResponse(content: string, request: QuestionGenerationRequest): LLMQuestion[] {
+    try {
+      // Clean the content to extract JSON
+      let jsonContent = content.trim();
+      
+      // Remove markdown code blocks if present
+      if (jsonContent.startsWith('```json')) {
+        jsonContent = jsonContent.replace(/```json\n?/, '').replace(/\n?```$/, '');
+      } else if (jsonContent.startsWith('```')) {
+        jsonContent = jsonContent.replace(/```\n?/, '').replace(/\n?```$/, '');
+      }
+
+      const questions = JSON.parse(jsonContent);
+      
+      if (!Array.isArray(questions)) {
+        throw new Error('Response is not an array');
+      }
+
+      // Validate and format questions
+      return questions.map((q, index) => ({
+        id: index + 1,
+        question: q.question || `Generated question ${index + 1}`,
+        options: Array.isArray(q.options) ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'],
+        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+        explanation: q.explanation || 'Explanation not provided.',
+        difficulty: q.difficulty || this.mapDifficultyLevel(request.difficulty),
+        category: q.category || request.category,
+        topic: q.topic || request.topic
+      }));
+
+    } catch (error) {
+      console.error('Error parsing OpenAI response:', error);
+      console.log('Raw content:', content);
+      throw new Error('Failed to parse OpenAI response');
+    }
+  }
+
+  private generateFallbackQuestions(request: QuestionGenerationRequest): LLMQuestion[] {
+    const questionBank = this.getFallbackQuestionBank();
+    const topicQuestions = questionBank[request.topic] || questionBank['JavaScript Fundamentals Assessment'];
     const difficultyQuestions = topicQuestions[request.difficulty] || topicQuestions['beginner'];
     
     // Shuffle and select questions
@@ -89,7 +202,68 @@ class LLMService {
     return mapping[level];
   }
 
-  private getQuestionBank() {
+  // Generate questions for specific assessment topics
+  async generateAssessmentQuestions(assessmentTitle: string, userContext: any): Promise<LLMQuestion[]> {
+    const questionCount = 5; // Default number of questions
+    
+    // Map assessment titles to topics and difficulty
+    const assessmentConfig = this.getAssessmentConfig(assessmentTitle);
+    
+    const request: QuestionGenerationRequest = {
+      topic: assessmentConfig.topic,
+      difficulty: assessmentConfig.difficulty,
+      category: assessmentConfig.category,
+      questionCount,
+      userRole: userContext.role,
+      userDepartment: userContext.department,
+      userLevel: userContext.level
+    };
+
+    return this.generateQuestions(request);
+  }
+
+  private getAssessmentConfig(assessmentTitle: string) {
+    const configs: Record<string, any> = {
+      'JavaScript Fundamentals Assessment': {
+        topic: 'JavaScript Programming',
+        difficulty: 'beginner',
+        category: 'programming'
+      },
+      'React Advanced Patterns': {
+        topic: 'React.js Framework',
+        difficulty: 'advanced',
+        category: 'programming'
+      },
+      'Data Science Fundamentals': {
+        topic: 'Data Science and Analytics',
+        difficulty: 'intermediate',
+        category: 'data-science'
+      },
+      'AWS Cloud Practitioner': {
+        topic: 'Amazon Web Services Cloud Computing',
+        difficulty: 'beginner',
+        category: 'cloud'
+      },
+      'Cybersecurity Risk Assessment': {
+        topic: 'Cybersecurity and Risk Management',
+        difficulty: 'advanced',
+        category: 'security'
+      },
+      'UI/UX Design Principles': {
+        topic: 'User Interface and User Experience Design',
+        difficulty: 'intermediate',
+        category: 'design'
+      }
+    };
+
+    return configs[assessmentTitle] || {
+      topic: 'General Technology Assessment',
+      difficulty: 'intermediate',
+      category: 'technology'
+    };
+  }
+
+  private getFallbackQuestionBank() {
     return {
       'JavaScript Fundamentals Assessment': {
         beginner: [
@@ -147,28 +321,6 @@ class LLMService {
             ],
             correctAnswer: 1,
             explanation: "Object properties can be accessed using dot notation (object.property) or bracket notation (object['property'])."
-          },
-          {
-            question: "Which of the following is NOT a primitive data type in JavaScript?",
-            options: [
-              "string",
-              "number",
-              "array",
-              "boolean"
-            ],
-            correctAnswer: 2,
-            explanation: "Arrays are objects in JavaScript, not primitive data types. The primitive types are: string, number, boolean, undefined, null, symbol, and bigint."
-          },
-          {
-            question: "What is the purpose of the 'use strict' directive in JavaScript?",
-            options: [
-              "It makes JavaScript run faster",
-              "It enables strict mode which catches common coding errors",
-              "It imports external libraries",
-              "It defines global variables"
-            ],
-            correctAnswer: 1,
-            explanation: "'use strict' enables strict mode, which helps catch common coding mistakes and prevents the use of certain error-prone features."
           }
         ],
         intermediate: [
@@ -193,50 +345,6 @@ class LLMService {
             ],
             correctAnswer: 1,
             explanation: "'==' performs type coercion before comparison, while '===' (strict equality) compares both value and type without coercion."
-          },
-          {
-            question: "What is the purpose of the 'this' keyword in JavaScript?",
-            options: [
-              "It always refers to the global object",
-              "It refers to the current function",
-              "It refers to the object that is executing the current function",
-              "It's used for variable declarations"
-            ],
-            correctAnswer: 2,
-            explanation: "'this' refers to the object that is currently executing the function. Its value depends on how the function is called."
-          },
-          {
-            question: "What is event bubbling in JavaScript?",
-            options: [
-              "When events are deleted automatically",
-              "When an event propagates from the target element up through its ancestors",
-              "When events are created dynamically",
-              "When multiple events fire simultaneously"
-            ],
-            correctAnswer: 1,
-            explanation: "Event bubbling is when an event starts from the target element and bubbles up through its parent elements in the DOM tree."
-          },
-          {
-            question: "What is the difference between 'let', 'const', and 'var'?",
-            options: [
-              "They all work exactly the same",
-              "'var' has function scope, 'let' and 'const' have block scope; 'const' cannot be reassigned",
-              "'let' is for numbers, 'const' is for strings, 'var' is for booleans",
-              "'var' is deprecated and should never be used"
-            ],
-            correctAnswer: 1,
-            explanation: "'var' has function scope and can be hoisted, 'let' and 'const' have block scope. 'const' creates immutable bindings."
-          },
-          {
-            question: "What is the purpose of Promise.all() in JavaScript?",
-            options: [
-              "It creates a new Promise",
-              "It waits for all promises to resolve and returns an array of results",
-              "It cancels all running promises",
-              "It converts callbacks to promises"
-            ],
-            correctAnswer: 1,
-            explanation: "Promise.all() takes an array of promises and returns a single promise that resolves when all input promises resolve, with an array of all results."
           }
         ],
         advanced: [
@@ -250,50 +358,6 @@ class LLMService {
             ],
             correctAnswer: 2,
             explanation: "The event loop coordinates between the call stack, callback queue (macrotasks), and microtask queue to handle asynchronous operations without blocking the main thread."
-          },
-          {
-            question: "What is the difference between microtasks and macrotasks in JavaScript?",
-            options: [
-              "There is no difference",
-              "Microtasks have higher priority and are executed before macrotasks",
-              "Macrotasks are faster than microtasks",
-              "Microtasks are only for Promises"
-            ],
-            correctAnswer: 1,
-            explanation: "Microtasks (like Promise callbacks) have higher priority and are executed before macrotasks (like setTimeout callbacks) in each event loop iteration."
-          },
-          {
-            question: "What is the purpose of WeakMap and WeakSet in JavaScript?",
-            options: [
-              "They are faster versions of Map and Set",
-              "They allow garbage collection of keys/values when no other references exist",
-              "They have unlimited size capacity",
-              "They are used for weak typing"
-            ],
-            correctAnswer: 1,
-            explanation: "WeakMap and WeakSet hold 'weak' references to their keys, allowing garbage collection when no other references to the keys exist."
-          },
-          {
-            question: "What is the difference between call(), apply(), and bind() methods?",
-            options: [
-              "They all do exactly the same thing",
-              "call() and apply() invoke immediately with different argument formats; bind() returns a new function",
-              "Only bind() can change the 'this' context",
-              "apply() is deprecated and shouldn't be used"
-            ],
-            correctAnswer: 1,
-            explanation: "call() invokes with individual arguments, apply() with an array of arguments, and bind() returns a new function with bound context and arguments."
-          },
-          {
-            question: "What is a Proxy in JavaScript and what can it be used for?",
-            options: [
-              "A way to make HTTP requests",
-              "An object that intercepts and customizes operations on another object",
-              "A method for creating private variables",
-              "A tool for debugging JavaScript code"
-            ],
-            correctAnswer: 1,
-            explanation: "A Proxy allows you to intercept and customize operations (like property lookup, assignment, function calls) performed on objects."
           }
         ]
       },
@@ -309,17 +373,6 @@ class LLMService {
             ],
             correctAnswer: 1,
             explanation: "JSX is a syntax extension for JavaScript that allows you to write HTML-like code within JavaScript, making React components more readable."
-          },
-          {
-            question: "What is the purpose of the useState hook in React?",
-            options: [
-              "To make HTTP requests",
-              "To manage component state in functional components",
-              "To handle routing",
-              "To optimize performance"
-            ],
-            correctAnswer: 1,
-            explanation: "useState is a React hook that allows you to add state to functional components, returning the current state value and a setter function."
           }
         ],
         intermediate: [
@@ -333,17 +386,6 @@ class LLMService {
             ],
             correctAnswer: 1,
             explanation: "React.memo() is a higher-order component that prevents unnecessary re-renders by memoizing the component and only re-rendering when props change."
-          },
-          {
-            question: "When should you use useCallback hook?",
-            options: [
-              "Always when defining functions in components",
-              "When you want to memoize a function to prevent unnecessary re-renders",
-              "To handle API calls",
-              "To manage component state"
-            ],
-            correctAnswer: 1,
-            explanation: "useCallback should be used to memoize functions when they are passed as props to child components or used as dependencies in other hooks."
           }
         ],
         advanced: [
@@ -357,17 +399,6 @@ class LLMService {
             ],
             correctAnswer: 1,
             explanation: "useLayoutEffect runs synchronously after all DOM mutations but before the browser paints, while useEffect runs asynchronously after the paint."
-          },
-          {
-            question: "What are React Suspense boundaries used for?",
-            options: [
-              "Error handling only",
-              "Code splitting and lazy loading with fallback UI",
-              "State management",
-              "Performance monitoring"
-            ],
-            correctAnswer: 1,
-            explanation: "Suspense boundaries allow you to handle loading states for lazy-loaded components and provide fallback UI while components are being loaded."
           }
         ]
       },
@@ -383,17 +414,6 @@ class LLMService {
             ],
             correctAnswer: 0,
             explanation: "Supervised learning uses labeled training data to learn a mapping from inputs to outputs, while unsupervised learning finds patterns in data without labeled examples."
-          },
-          {
-            question: "Which Python library is most commonly used for data manipulation?",
-            options: [
-              "NumPy",
-              "Matplotlib",
-              "Pandas",
-              "Scikit-learn"
-            ],
-            correctAnswer: 2,
-            explanation: "Pandas is the most commonly used Python library for data manipulation and analysis, providing data structures like DataFrames."
           }
         ],
         intermediate: [
@@ -407,17 +427,6 @@ class LLMService {
             ],
             correctAnswer: 1,
             explanation: "A p-value is the probability of observing the test results (or more extreme) given that the null hypothesis is true."
-          },
-          {
-            question: "What is overfitting in machine learning?",
-            options: [
-              "When a model performs well on training data but poorly on new data",
-              "When a model is too simple",
-              "When there's too much training data",
-              "When the model trains too quickly"
-            ],
-            correctAnswer: 0,
-            explanation: "Overfitting occurs when a model learns the training data too well, including noise and outliers, resulting in poor generalization to new data."
           }
         ],
         advanced: [
@@ -435,48 +444,6 @@ class LLMService {
         ]
       }
     };
-  }
-
-  // Generate questions for specific assessment topics
-  async generateAssessmentQuestions(assessmentTitle: string, userContext: any): Promise<LLMQuestion[]> {
-    const questionCount = 5; // Default number of questions
-    
-    // Map assessment titles to topics and difficulty
-    const assessmentConfig = this.getAssessmentConfig(assessmentTitle);
-    
-    const request: QuestionGenerationRequest = {
-      topic: assessmentConfig.topic,
-      difficulty: assessmentConfig.difficulty,
-      category: assessmentConfig.category,
-      questionCount,
-      userRole: userContext.role,
-      userDepartment: userContext.department,
-      userLevel: userContext.level
-    };
-
-    return this.generateQuestions(request);
-  }
-
-  private getAssessmentConfig(assessmentTitle: string) {
-    const configs: Record<string, any> = {
-      'JavaScript Fundamentals Assessment': {
-        topic: 'JavaScript Fundamentals Assessment',
-        difficulty: 'beginner',
-        category: 'programming'
-      },
-      'React Advanced Patterns': {
-        topic: 'React Advanced Patterns',
-        difficulty: 'advanced',
-        category: 'programming'
-      },
-      'Data Science Fundamentals': {
-        topic: 'Data Science Fundamentals',
-        difficulty: 'intermediate',
-        category: 'data-science'
-      }
-    };
-
-    return configs[assessmentTitle] || configs['JavaScript Fundamentals Assessment'];
   }
 }
 

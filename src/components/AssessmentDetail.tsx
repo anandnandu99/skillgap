@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Clock, CheckCircle, XCircle, Award, RotateCcw, ArrowRight, ArrowLeft, AlertCircle, Download, Share2, Loader } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Award, RotateCcw, ArrowRight, ArrowLeft, AlertCircle, Download, Share2, Loader, Sparkles } from 'lucide-react';
 import { User, userStorage, AssessmentResult, Activity, Certificate } from '../utils/userStorage';
 import { emailService } from '../utils/emailService';
 import { llmService, LLMQuestion } from '../utils/llmService';
@@ -66,6 +66,36 @@ const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
       category: 'data-science',
       level: 'intermediate',
       badge: 'Data Analyst'
+    },
+    {
+      id: '4',
+      title: 'AWS Cloud Practitioner',
+      description: 'Test your understanding of AWS cloud services, pricing, and best practices',
+      duration: 90,
+      passingScore: 70,
+      category: 'cloud',
+      level: 'beginner',
+      badge: 'Cloud Foundation'
+    },
+    {
+      id: '5',
+      title: 'Cybersecurity Risk Assessment',
+      description: 'Advanced cybersecurity assessment covering threat detection, incident response, and risk management',
+      duration: 75,
+      passingScore: 75,
+      category: 'security',
+      level: 'advanced',
+      badge: 'Security Specialist'
+    },
+    {
+      id: '6',
+      title: 'UI/UX Design Principles',
+      description: 'Evaluate your understanding of design principles, user research, and prototyping',
+      duration: 40,
+      passingScore: 70,
+      category: 'design',
+      level: 'intermediate',
+      badge: 'UX Designer'
     }
   ];
 
@@ -116,16 +146,18 @@ const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
         level: assessment.level
       };
       
+      console.log('Generating questions with OpenAI for:', assessment.title);
       const generatedQuestions = await llmService.generateAssessmentQuestions(
         assessment.title,
         userContext
       );
       
+      console.log('Generated questions:', generatedQuestions);
       setQuestions(generatedQuestions);
       setSelectedAnswers(new Array(generatedQuestions.length).fill(undefined));
     } catch (error) {
-      setQuestionGenerationError('Failed to generate questions. Please try again.');
       console.error('Question generation error:', error);
+      setQuestionGenerationError('Failed to generate questions. Please try again.');
     } finally {
       setIsLoadingQuestions(false);
     }
@@ -293,14 +325,29 @@ const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
           <div className="flex flex-col items-center space-y-4">
-            <Loader className="w-12 h-12 text-blue-600 animate-spin" />
-            <h2 className="text-2xl font-bold text-gray-900">Generating Personalized Questions</h2>
+            <div className="relative">
+              <Loader className="w-12 h-12 text-blue-600 animate-spin" />
+              <Sparkles className="w-6 h-6 text-yellow-500 absolute -top-1 -right-1 animate-pulse" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">Generating AI-Powered Questions</h2>
             <p className="text-gray-600 max-w-md">
-              Our AI is creating customized questions based on your role as {user.role} in {user.department}. 
+              Our advanced AI is creating personalized questions based on your role as {user.role} in {user.department}. 
               This will take a moment...
             </p>
             <div className="w-full max-w-md bg-gray-200 rounded-full h-2">
-              <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full animate-pulse" style={{width: '75%'}}></div>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md">
+              <div className="flex items-center space-x-2 text-blue-800">
+                <Sparkles className="w-4 h-4" />
+                <span className="text-sm font-medium">AI Features:</span>
+              </div>
+              <ul className="text-xs text-blue-700 mt-2 space-y-1">
+                <li>• Personalized for your role and department</li>
+                <li>• Dynamic difficulty adjustment</li>
+                <li>• Real-world scenario questions</li>
+                <li>• Powered by OpenAI GPT</li>
+              </ul>
             </div>
           </div>
         </div>
@@ -317,12 +364,18 @@ const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
             <AlertCircle className="w-12 h-12 text-red-600" />
             <h2 className="text-2xl font-bold text-gray-900">Question Generation Failed</h2>
             <p className="text-gray-600 max-w-md">{questionGenerationError}</p>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md">
+              <p className="text-sm text-yellow-800">
+                Don't worry! We'll use our backup question bank to ensure you can still take the assessment.
+              </p>
+            </div>
             <div className="flex space-x-4">
               <button
                 onClick={generateQuestions}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
               >
-                Try Again
+                <Sparkles className="w-4 h-4" />
+                <span>Try AI Generation Again</span>
               </button>
               <button
                 onClick={() => navigate('/skill-assessment')}
@@ -380,7 +433,7 @@ const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
                   </div>
                   <div className="text-right">
                     <p>Hexaware Learning Platform</p>
-                    <p>Digital Certificate</p>
+                    <p>AI-Powered Assessment</p>
                   </div>
                 </div>
               </div>
@@ -448,14 +501,14 @@ const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
 
             <div className="text-left bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 mb-6 border border-blue-200">
               <h3 className="font-semibold text-blue-900 mb-3 flex items-center">
-                <Loader className="w-5 h-5 mr-2" />
+                <Sparkles className="w-5 h-5 mr-2" />
                 AI-Powered Assessment Features:
               </h3>
               <ul className="space-y-2 text-blue-800">
                 <li>• Questions personalized for your role as {user.role}</li>
                 <li>• Content adapted to {user.department} department context</li>
                 <li>• Dynamic difficulty based on {assessment.level} level</li>
-                <li>• Real-time question generation using advanced AI</li>
+                <li>• Real-time question generation using OpenAI GPT</li>
                 <li>• Earn the "{assessment.badge}" badge upon successful completion</li>
                 <li>• Receive a digital certificate with unique verification ID</li>
               </ul>
@@ -478,8 +531,8 @@ const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
               onClick={startAssessment}
               className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all font-medium text-lg flex items-center space-x-2 mx-auto"
             >
-              <Loader className="w-5 h-5" />
-              <span>Generate Questions & Start Assessment</span>
+              <Sparkles className="w-5 h-5" />
+              <span>Generate AI Questions & Start Assessment</span>
             </button>
           </div>
         </div>
@@ -510,7 +563,7 @@ const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
                 <XCircle className="w-10 h-10 text-red-600" />
               )}
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Assessment Complete!</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Assessment Complete!</h1>
             <p className={`text-lg ${passed ? 'text-green-600' : 'text-red-600'}`}>
               {passed ? `Congratulations! You earned the "${assessment.badge}" badge!` : 'Keep studying and try again!'}
             </p>
@@ -539,7 +592,13 @@ const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
           </div>
 
           <div className="space-y-6 mb-8">
-            <h2 className="text-xl font-bold text-gray-900">Review Your Answers</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Review Your AI-Generated Questions</h2>
+              <div className="flex items-center space-x-2 text-sm text-blue-600">
+                <Sparkles className="w-4 h-4" />
+                <span>Powered by OpenAI</span>
+              </div>
+            </div>
             {questions.map((question, index) => {
               const userAnswer = selectedAnswers[index];
               const isCorrect = userAnswer === question.correctAnswer;
@@ -568,6 +627,9 @@ const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
                         }`}>
                           {question.difficulty}
                         </span>
+                        <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          AI Generated
+                        </span>
                       </div>
                       <div className="space-y-2">
                         {question.options.map((option, optionIndex) => (
@@ -593,7 +655,7 @@ const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
                       </div>
                       <div className="mt-3 p-3 bg-blue-50 rounded">
                         <p className="text-sm text-blue-800">
-                          <strong>Explanation:</strong> {question.explanation}
+                          <strong>AI Explanation:</strong> {question.explanation}
                         </p>
                       </div>
                     </div>
@@ -637,7 +699,7 @@ const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
           <Loader className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900">Preparing Assessment</h2>
+          <h2 className="text-xl font-bold text-gray-900">Preparing AI Assessment</h2>
           <p className="text-gray-600">Please wait while we set up your personalized questions...</p>
         </div>
       </div>
@@ -666,8 +728,9 @@ const AssessmentDetail: React.FC<AssessmentDetailProps> = ({ user }) => {
             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
               {question.category}
             </span>
-            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-medium">
-              AI Generated
+            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-medium flex items-center space-x-1">
+              <Sparkles className="w-3 h-3" />
+              <span>AI Generated</span>
             </span>
           </div>
           <div className="flex items-center space-x-2 text-gray-600">
